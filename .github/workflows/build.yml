@@ -35,7 +35,10 @@ jobs:
     - name: Compile Inno Setup Installer
       shell: powershell
       run: |
-        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" HP.UpdateManager.Gui/installer.iss
+        $iscc = Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup *" -Filter "ISCC.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+        if (-not $iscc) { throw "ISCC.exe not found!" }
+        Write-Host "Using Inno Setup Compiler: $iscc"
+        & $iscc HP.UpdateManager.Gui/installer.iss
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
