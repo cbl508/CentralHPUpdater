@@ -14,23 +14,27 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install ps2exe
-      shell: pwsh
+      shell: powershell
       run: |
-        Install-Module -Name ps2exe -Force -Scope CurrentUser
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        Install-Module -Name ps2exe -Force -Scope CurrentUser -AllowClobber
 
     - name: Compile PowerShell to EXE
-      shell: pwsh
+      shell: powershell
       run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
         cd HP.UpdateManager.Gui
-        # Ensure ps2exe is installed in the session
+        Write-Host "Starting compilation..."
         Import-Module ps2exe
-        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile "HPUpdateManager.exe" -WindowStyle Hidden
-        if (-not (Test-Path "HPUpdateManager.exe")) { throw "EXE compilation failed!" }
+        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile "HPUpdateManager.exe" -noConsole -verbose
+        if (-not (Test-Path "HPUpdateManager.exe")) { 
+            Write-Error "EXE compilation failed! Output file not found."
+            exit 1 
+        }
 
     - name: Compile Inno Setup Installer
-      shell: pwsh
+      shell: powershell
       run: |
-        # ISCC is usually at this location on windows-latest
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" HP.UpdateManager.Gui/installer.iss
 
     - name: Upload Build Artifacts
