@@ -26,46 +26,68 @@ jobs:
       shell: powershell
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
+        
+        # Get Version from Tag
+        $version = "${{ github.ref_name }}".TrimStart('v')
+        if (-not $version) { $version = "1.0.0" }
+        Write-Host "Building version: $version"
+
         cd HP.UpdateManager.Gui
-        Write-Host "Starting compilation..."
         Import-Module ps2exe
-        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile "HPUpdateManager.exe" -noConsole -verbose
-        if (-not (Test-Path "HPUpdateManager.exe")) { 
-            Write-Error "EXE compilation failed! Output file not found."
+        
+        # Compile Portable EXE
+        $portableName = "CentralHPUpdater-$version-portable.exe"
+        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile $portableName -noConsole -verbose
+        
+        if (-not (Test-Path $portableName)) { 
+            Write-Error "Portable EXE compilation failed!"
             exit 1 
         }
+
+        # Create a copy for the installer source (renamed to simple name for Inno Setup)
+        Copy-Item $portableName "CentralHPUpdater.exe"
 
     - name: Compile Inno Setup Installer
       shell: powershell
       run: |
         $iscc = Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup *" -Filter "ISCC.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
         if (-not $iscc) { throw "ISCC.exe not found!" }
-        Write-Host "Using Inno Setup Compiler: $iscc"
-        & $iscc HP.UpdateManager.Gui/installer.iss
+        
+        $version = "${{ github.ref_name }}".TrimStart('v')
+        if (-not $version) { $version = "1.0.0" }
+        
+        # Define AppVersion constant for Inno Setup
+        $args = @("/DAppVersion=$version", "HP.UpdateManager.Gui/installer.iss")
+        & $iscc $args
 
     - name: Prepare Release Artifacts
       shell: powershell
       run: |
         New-Item -ItemType Directory -Force -Path "dist"
         
-        # Check and move Main EXE
-        if (Test-Path "HP.UpdateManager.Gui/HPUpdateManager.exe") {
-            Move-Item "HP.UpdateManager.Gui/HPUpdateManager.exe" "dist/"
+        $version = "${{ github.ref_name }}".TrimStart('v')
+        if (-not $version) { $version = "1.0.0" }
+        
+        # Move Portable EXE
+        $portableSrc = "HP.UpdateManager.Gui/CentralHPUpdater-$version-portable.exe"
+        if (Test-Path $portableSrc) {
+            Move-Item $portableSrc "dist/"
         } else {
-            Write-Warning "HPUpdateManager.exe not found!"
+            Write-Warning "Portable EXE not found at $portableSrc"
         }
 
-        # Check and move Installer
-        $installerPath = "HP.UpdateManager.Gui/Output/HPUpdateManagerInstaller.exe"
-        if (Test-Path $installerPath) {
-            Move-Item $installerPath "dist/"
+        # Move Installer
+        # Inno Setup output name is CentralHPUpdaterInstaller.exe based on updated ISS
+        $installerSrc = "HP.UpdateManager.Gui/Output/CentralHPUpdaterInstaller.exe"
+        if (Test-Path $installerSrc) {
+            $installerDest = "dist/CentralHPUpdater-$version-Setup.exe"
+            Rename-Item $installerSrc -NewName (Split-Path $installerDest -Leaf)
+            Move-Item "HP.UpdateManager.Gui/Output/$(Split-Path $installerDest -Leaf)" "dist/"
         } else {
-            Write-Warning "Installer not found at $installerPath"
-            # Debug listing
+            Write-Warning "Installer not found at $installerSrc"
             Get-ChildItem -Recurse "HP.UpdateManager.Gui"
         }
 
-        # List dist contents
         Get-ChildItem "dist"
 
     - name: Upload Build Artifacts

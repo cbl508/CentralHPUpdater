@@ -115,7 +115,7 @@ function Get-RemoteSystemInfo {
         }
     }
     catch {
-        Write-Log "Failed to connect to $Hostname: $($_.Exception.Message)"
+        Write-Log "Failed to connect to ${Hostname}: $($_.Exception.Message)"
         return @{
             Model = "Unknown"
             Serial = "N/A"
@@ -194,7 +194,7 @@ function Invoke-HPUpdate {
         [System.Windows.MessageBox]::Show("Update successful on $Hostname", "Success")
     }
     catch {
-        [System.Windows.MessageBox]::Show("Update failed on $Hostname: $($_.Exception.Message)", "Error")
+        [System.Windows.MessageBox]::Show("Update failed on ${Hostname}: $($_.Exception.Message)", "Error")
     }
 }
 
