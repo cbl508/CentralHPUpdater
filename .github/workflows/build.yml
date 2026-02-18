@@ -22,13 +22,16 @@ jobs:
       shell: pwsh
       run: |
         cd HP.UpdateManager.Gui
+        # Ensure ps2exe is installed in the session
+        Import-Module ps2exe
         Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile "HPUpdateManager.exe" -WindowStyle Hidden
+        if (-not (Test-Path "HPUpdateManager.exe")) { throw "EXE compilation failed!" }
 
     - name: Compile Inno Setup Installer
       shell: pwsh
       run: |
-        # ISCC is pre-installed on windows-latest
-        iscc HP.UpdateManager.Gui/installer.iss
+        # ISCC is usually at this location on windows-latest
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" HP.UpdateManager.Gui/installer.iss
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
@@ -37,3 +40,4 @@ jobs:
         path: |
           HP.UpdateManager.Gui/HPUpdateManager.exe
           HP.UpdateManager.Gui/Output/*.exe
+          HP.UpdateManager.Gui/*.exe

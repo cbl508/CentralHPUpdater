@@ -6,8 +6,6 @@ DefaultGroupName=HP Update Manager
 OutputBaseFilename=HPUpdateManagerInstaller
 Compression=lzma
 SolidCompression=yes
-SetupIconFile=hp.ico
-UninstallDisplayIcon={app}\hp.ico
 
 [Files]
 Source: "HP.UpdateManager.ps1"; DestDir: "{app}"; Flags: ignoreversion
