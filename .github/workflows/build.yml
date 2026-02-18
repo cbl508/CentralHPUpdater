@@ -43,23 +43,43 @@ jobs:
         Write-Host "Using Inno Setup Compiler: $iscc"
         & $iscc HP.UpdateManager.Gui/installer.iss
 
+    - name: Prepare Release Artifacts
+      shell: powershell
+      run: |
+        New-Item -ItemType Directory -Force -Path "dist"
+        
+        # Check and move Main EXE
+        if (Test-Path "HP.UpdateManager.Gui/HPUpdateManager.exe") {
+            Move-Item "HP.UpdateManager.Gui/HPUpdateManager.exe" "dist/"
+        } else {
+            Write-Warning "HPUpdateManager.exe not found!"
+        }
+
+        # Check and move Installer
+        $installerPath = "HP.UpdateManager.Gui/Output/HPUpdateManagerInstaller.exe"
+        if (Test-Path $installerPath) {
+            Move-Item $installerPath "dist/"
+        } else {
+            Write-Warning "Installer not found at $installerPath"
+            # Debug listing
+            Get-ChildItem -Recurse "HP.UpdateManager.Gui"
+        }
+
+        # List dist contents
+        Get-ChildItem "dist"
+
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: HP-Update-Manager-Build
-        path: |
-          HP.UpdateManager.Gui/HPUpdateManager.exe
-          HP.UpdateManager.Gui/Output/*.exe
-          HP.UpdateManager.Gui/*.exe
+        path: dist/*
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
-        files: |
-          HP.UpdateManager.Gui/HPUpdateManager.exe
-          HP.UpdateManager.Gui/Output/HPUpdateManagerInstaller.exe
+        files: dist/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
