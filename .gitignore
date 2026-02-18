@@ -1,0 +1,12 @@
+# PowerShell
+*.log
+*.xml
+# Built files
+*.exe
+*.msi
+Output/
+# Common OS files
+.DS_Store
+Thumbs.db
+# Git
+.git/
