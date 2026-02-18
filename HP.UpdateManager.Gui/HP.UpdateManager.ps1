@@ -102,7 +102,7 @@ if (-not (Test-Path $xamlPath)) {
 
 [xml]$xaml = Get-Content $xamlPath
 # Remove x:Class attribute which causes issues with simple XamlReader loading
-if ($xaml.Window.Attribute("x:Class")) {
+if ($xaml.Window.HasAttribute("x:Class")) {
     $xaml.Window.RemoveAttribute("x:Class")
 }
 
