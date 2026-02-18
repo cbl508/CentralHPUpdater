@@ -1,0 +1,39 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install ps2exe
+      shell: pwsh
+      run: |
+        Install-Module -Name ps2exe -Force -Scope CurrentUser
+
+    - name: Compile PowerShell to EXE
+      shell: pwsh
+      run: |
+        cd HP.UpdateManager.Gui
+        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile "HPUpdateManager.exe" -WindowStyle Hidden
+
+    - name: Compile Inno Setup Installer
+      shell: pwsh
+      run: |
+        # ISCC is pre-installed on windows-latest
+        iscc HP.UpdateManager.Gui/installer.iss
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: HP-Update-Manager-Build
+        path: |
+          HP.UpdateManager.Gui/HPUpdateManager.exe
+          HP.UpdateManager.Gui/Output/*.exe
