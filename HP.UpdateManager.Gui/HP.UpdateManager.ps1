@@ -90,7 +90,10 @@ public class HPComputer : INotifyPropertyChanged {
 $computers = New-Object System.Collections.ObjectModel.ObservableCollection[HPComputer]
 
 # --- CONFIGURATION ---
-$configPath = Join-Path $Global:ScriptDir "config.json"
+$AppDataDir = Join-Path $env:APPDATA "CentralHPUpdater"
+if (-not (Test-Path $AppDataDir)) { New-Item -ItemType Directory -Path $AppDataDir -Force | Out-Null }
+
+$configPath = Join-Path $AppDataDir "config.json"
 $Global:Config = @{
     Timeout = 10
     LogPath = "logs"
@@ -108,9 +111,12 @@ function Load-Config {
             Write-Log "Failed to load config, using defaults."
         }
     }
-    # Ensure log directory exists
-    $fullLogPath = Join-Path $Global:ScriptDir $Global:Config.LogPath
-    if (-not (Test-Path $fullLogPath)) { New-Item -ItemType Directory -Path $fullLogPath -Force | Out-Null }
+    # Ensure log directory exists (relative to AppData if not absolute, or just default to AppData/logs)
+    if (-not [System.IO.Path]::IsPathRooted($Global:Config.LogPath)) {
+        $Global:Config.LogPath = Join-Path $AppDataDir $Global:Config.LogPath
+    }
+    
+    if (-not (Test-Path $Global:Config.LogPath)) { New-Item -ItemType Directory -Path $Global:Config.LogPath -Force | Out-Null }
 }
 
 function Save-Config {
@@ -118,7 +124,7 @@ function Save-Config {
 }
 
 # --- PERSISTENCE ---
-$inventoryPath = Join-Path $Global:ScriptDir "inventory.json"
+$inventoryPath = Join-Path $AppDataDir "inventory.json"
 
 function Save-Inventory {
     $data = foreach ($c in $computers) {
@@ -269,7 +275,7 @@ function Write-Log {
 
     # File Log
     try {
-        $logFile = Join-Path $Global:ScriptDir $Global:Config.LogPath "app_$(Get-Date -Format 'yyyy-MM-dd').log"
+        $logFile = Join-Path $Global:Config.LogPath "app_$(Get-Date -Format 'yyyy-MM-dd').log"
         Add-Content -Path $logFile -Value $logEntry -ErrorAction SilentlyContinue
     } catch {}
 }
