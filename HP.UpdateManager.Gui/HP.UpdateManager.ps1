@@ -47,6 +47,9 @@ public class HPComputer : INotifyPropertyChanged {
     private string _status;
     private string _statusColor;
     private string _lastUpdated;
+    private string _os;
+    private string _freeDisk;
+    private string _memory;
 
     public string Hostname { 
         get { return _hostname; } 
@@ -76,6 +79,50 @@ public class HPComputer : INotifyPropertyChanged {
         get { return _lastUpdated; } 
         set { _lastUpdated = value; OnPropertyChanged("LastUpdated"); } 
     }
+    public string OS { 
+        get { return _os; } 
+        set { _os = value; OnPropertyChanged("OS"); } 
+    }
+    public string FreeDisk { 
+        get { return _freeDisk; } 
+        set { _freeDisk = value; OnPropertyChanged("FreeDisk"); } 
+    }
+    public string Memory { 
+        get { return _memory; } 
+        set { _memory = value; OnPropertyChanged("Memory"); } 
+    }
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    protected void OnPropertyChanged(string name) {
+        var handler = PropertyChanged;
+        if (handler != null) {
+            handler(this, new PropertyChangedEventArgs(name));
+        }
+    }
+}
+
+public class UpdateItem : INotifyPropertyChanged {
+    private bool _isSelected;
+    private string _name;
+    private string _id;
+    private string _type;
+
+    public bool IsSelected { 
+        get { return _isSelected; } 
+        set { _isSelected = value; OnPropertyChanged("IsSelected"); } 
+    }
+    public string Name { 
+        get { return _name; } 
+        set { _name = value; OnPropertyChanged("Name"); } 
+    }
+    public string ID { 
+        get { return _id; } 
+        set { _id = value; OnPropertyChanged("ID"); } 
+    }
+    public string Type { 
+        get { return _type; } 
+        set { _type = value; OnPropertyChanged("Type"); } 
+    }
 
     public event PropertyChangedEventHandler PropertyChanged;
     protected void OnPropertyChanged(string name) {
@@ -88,6 +135,7 @@ public class HPComputer : INotifyPropertyChanged {
 "@
 
 $computers = New-Object System.Collections.ObjectModel.ObservableCollection[HPComputer]
+$availableUpdates = New-Object System.Collections.ObjectModel.ObservableCollection[UpdateItem]
 
 # --- CONFIGURATION ---
 $AppDataDir = Join-Path $env:APPDATA "CentralHPUpdater"
@@ -95,8 +143,9 @@ if (-not (Test-Path $AppDataDir)) { New-Item -ItemType Directory -Path $AppDataD
 
 $configPath = Join-Path $AppDataDir "config.json"
 $Global:Config = @{
-    Timeout = 10
+    Timeout = 5
     LogPath = "logs"
+    RepoPath = "Repository"
     AutoRefresh = $false
 }
 
@@ -106,17 +155,23 @@ function Load-Config {
             $loaded = Get-Content $configPath | ConvertFrom-Json
             if ($loaded.Timeout) { $Global:Config.Timeout = $loaded.Timeout }
             if ($loaded.LogPath) { $Global:Config.LogPath = $loaded.LogPath }
+            if ($loaded.RepoPath) { $Global:Config.RepoPath = $loaded.RepoPath }
             if ($loaded.AutoRefresh) { $Global:Config.AutoRefresh = $loaded.AutoRefresh }
         } catch {
             Write-Log "Failed to load config, using defaults."
         }
     }
-    # Ensure log directory exists (relative to AppData if not absolute, or just default to AppData/logs)
+    # Ensure log directory exists
     if (-not [System.IO.Path]::IsPathRooted($Global:Config.LogPath)) {
         $Global:Config.LogPath = Join-Path $AppDataDir $Global:Config.LogPath
     }
-    
     if (-not (Test-Path $Global:Config.LogPath)) { New-Item -ItemType Directory -Path $Global:Config.LogPath -Force | Out-Null }
+
+    # Ensure Repo directory exists
+    if (-not [System.IO.Path]::IsPathRooted($Global:Config.RepoPath)) {
+        $Global:Config.RepoPath = Join-Path $AppDataDir $Global:Config.RepoPath
+    }
+    if (-not (Test-Path $Global:Config.RepoPath)) { New-Item -ItemType Directory -Path $Global:Config.RepoPath -Force | Out-Null }
 }
 
 function Save-Config {
@@ -136,6 +191,9 @@ function Save-Inventory {
             Status = $c.Status
             StatusColor = $c.StatusColor
             LastUpdated = $c.LastUpdated
+            OS = $c.OS
+            FreeDisk = $c.FreeDisk
+            Memory = $c.Memory
         }
     }
     $data | ConvertTo-Json | Out-File $inventoryPath
@@ -155,6 +213,9 @@ function Load-Inventory {
                 $c.Status = $item.Status
                 $c.StatusColor = $item.StatusColor
                 $c.LastUpdated = $item.LastUpdated
+                $c.OS = $item.OS
+                $c.FreeDisk = $item.FreeDisk
+                $c.Memory = $item.Memory
                 $computers.Add($c)
             }
         } catch {
@@ -187,12 +248,20 @@ try {
 $dgComputers = $window.FindName("DgComputers")
 $btnAddComputer = $window.FindName("BtnAddComputer")
 $btnImport = $window.FindName("BtnImport")
+$btnExport = $window.FindName("BtnExport")
 $btnRefreshAll = $window.FindName("BtnRefreshAll")
-$btnUpdateBios = $window.FindName("BtnUpdateBios")
-$btnUpdateSoftpaqs = $window.FindName("BtnUpdateSoftpaqs")
+$btnUpdateSelected = $window.FindName("BtnUpdateSelected")
 $lstUpdates = $window.FindName("LstUpdates")
 $txtLog = $window.FindName("TxtLog")
 $txtSearch = $window.FindName("TxtSearch")
+$txtDetailHost = $window.FindName("TxtDetailHost")
+$txtDetailSerial = $window.FindName("TxtDetailSerial")
+
+# Context Menu
+$ctxPing = $window.FindName("CtxPing")
+$ctxOpenC = $window.FindName("CtxOpenC")
+$ctxRestart = $window.FindName("CtxRestart")
+$ctxRemove = $window.FindName("CtxRemove")
 
 # Navigation Elements
 $btnDashboard = $window.FindName("BtnDashboard")
@@ -218,14 +287,17 @@ $txtLastRefresh = $window.FindName("TxtLastRefresh")
 # Settings Elements
 $txtTimeout = $window.FindName("TxtTimeout")
 $txtLogPath = $window.FindName("TxtLogPath")
+$txtRepoPath = $window.FindName("TxtRepoPath")
 $chkAutoRefresh = $window.FindName("ChkAutoRefresh")
 $btnSaveSettings = $window.FindName("BtnSaveSettings")
 
 # Loading Elements
 $loadingOverlay = $window.FindName("LoadingOverlay")
 $txtLoadingStatus = $window.FindName("TxtLoadingStatus")
+$pbLoading = $window.FindName("PbLoading")
 
 if ($dgComputers) { $dgComputers.ItemsSource = $computers }
+if ($lstUpdates) { $lstUpdates.ItemsSource = $availableUpdates }
 
 # --- UTILITIES ---
 
@@ -234,6 +306,7 @@ function Show-Loading {
     if ($loadingOverlay) {
         $loadingOverlay.Visibility = "Visible"
         if ($txtLoadingStatus) { $txtLoadingStatus.Text = $Message }
+        if ($pbLoading) { $pbLoading.IsIndeterminate = $true }
         [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::ContextIdle)
     }
 }
@@ -263,7 +336,6 @@ function Write-Log {
     $timestamp = Get-Date -Format "HH:mm:ss"
     $logEntry = "[$timestamp] $Message"
     
-    # UI Log
     if ($window -and $window.Dispatcher) {
         $window.Dispatcher.Invoke({
             if ($txtLog) {
@@ -273,7 +345,6 @@ function Write-Log {
         })
     }
 
-    # File Log
     try {
         $logFile = Join-Path $Global:Config.LogPath "app_$(Get-Date -Format 'yyyy-MM-dd').log"
         Add-Content -Path $logFile -Value $logEntry -ErrorAction SilentlyContinue
@@ -284,11 +355,11 @@ function Write-Log {
 
 function Set-ButtonActive {
     param($Button)
-    $btnDashboard.Tag = ""
-    $btnComputers.Tag = ""
-    $btnLogs.Tag = ""
-    $btnSettings.Tag = ""
-    if ($Button) { $Button.Tag = "Active" }
+    $btnDashboard.IsEnabled = $true
+    $btnComputers.IsEnabled = $true
+    $btnLogs.IsEnabled = $true
+    $btnSettings.IsEnabled = $true
+    if ($Button) { $Button.IsEnabled = $false }
 }
 
 function Show-View {
@@ -327,9 +398,9 @@ function Show-View {
             $txtSubtitle.Text = "Configure application preferences"
             Set-ButtonActive $btnSettings
             
-            # Populate fields
             if ($txtTimeout) { $txtTimeout.Text = $Global:Config.Timeout }
             if ($txtLogPath) { $txtLogPath.Text = $Global:Config.LogPath }
+            if ($txtRepoPath) { $txtRepoPath.Text = $Global:Config.RepoPath }
             if ($chkAutoRefresh) { $chkAutoRefresh.IsChecked = $Global:Config.AutoRefresh }
         }
     }
@@ -345,25 +416,60 @@ if ($btnSettings) { $btnSettings.add_Click({ Show-View "Settings" }) }
 function Get-RemoteSystemInfo {
     param([string]$Hostname)
     
-    Write-Log "Connecting to ${Hostname}..."
+    Write-Log "Probing ${Hostname}..."
+    
+    # 1. Ping Check (Fast)
+    $ping = Test-Connection -ComputerName $Hostname -Count 1 -Quiet
+    if (-not $ping) {
+        Write-Log "${Hostname} is unreachable (Ping failed)."
+        return @{
+            Model = "Unknown"
+            Serial = "N/A"
+            PlatformID = "N/A"
+            Status = "Unreachable"
+            Color = "#E57373" # Red
+            LastUpdated = "Never"
+            OS = "N/A"
+            FreeDisk = "N/A"
+            Memory = "N/A"
+        }
+    }
+
+    # 2. WMI/CIM Connection
     try {
         $session = $null
         $timeout = $Global:Config.Timeout
         try {
             $session = New-CimSession -ComputerName $Hostname -ErrorAction Stop -OperationTimeoutSec $timeout
         } catch {
-            Write-Log "WinRM connection to ${Hostname} failed, attempting DCOM..."
+            Write-Log "WinRM to ${Hostname} failed, trying DCOM..."
             $opt = New-CimSessionOption -Protocol Dcom
             $session = New-CimSession -ComputerName $Hostname -SessionOption $opt -ErrorAction Stop -OperationTimeoutSec $timeout
         }
         
+        # HP Info
         $model = Get-HPDeviceModel -CimSession $session
         $serial = Get-HPDeviceSerialNumber -CimSession $session
         $platformId = Get-HPDeviceProductID -CimSession $session
         
+        # BIOS Info
         $biosInfo = Get-CimInstance -ClassName Win32_BIOS -CimSession $session
         $biosVersion = $biosInfo.SMBIOSBIOSVersion
         $biosDate = $biosInfo.ReleaseDate
+        
+        # OS Info
+        $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -CimSession $session
+        $osName = $osInfo.Caption -replace "Microsoft Windows ", ""
+        
+        # Disk Info (C:)
+        $diskInfo = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'" -CimSession $session
+        $freeSpaceGB = [math]::Round($diskInfo.FreeSpace / 1GB, 1)
+        $totalSpaceGB = [math]::Round($diskInfo.Size / 1GB, 1)
+        $diskStr = "${freeSpaceGB} GB / ${totalSpaceGB} GB"
+        
+        # Memory Info
+        $memInfo = Get-CimInstance -ClassName Win32_ComputerSystem -CimSession $session
+        $memGB = [math]::Round($memInfo.TotalPhysicalMemory / 1GB, 1)
         
         $formattedDate = "Unknown"
         if ($biosDate) {
@@ -373,20 +479,23 @@ function Get-RemoteSystemInfo {
         }
         
         Remove-CimSession $session
-        Write-Log "Successfully gathered info for ${Hostname} ($platformId)."
+        Write-Log "Successfully scanned ${Hostname}."
         
         return @{
             Model = $model
             Serial = $serial
             PlatformID = $platformId
-            Status = "Online ($biosVersion)"
+            Status = "Online"
             Color = "#4CAF50" # Green
             LastUpdated = $formattedDate
+            OS = $osName
+            FreeDisk = $diskStr
+            Memory = "${memGB} GB"
         }
     }
     catch {
         Write-Log "Failed to connect to ${Hostname}: $($_.Exception.Message)"
-        $status = "Offline"
+        $status = "WMI Error"
         if ($_.Exception.Message -match "Access is denied") {
             $status = "Access Denied"
         }
@@ -395,8 +504,11 @@ function Get-RemoteSystemInfo {
             Serial = "N/A"
             PlatformID = "N/A"
             Status = $status
-            Color = "#E57373" # Red
+            Color = "#FFB74D" # Orange/Warning
             LastUpdated = "Never"
+            OS = "N/A"
+            FreeDisk = "N/A"
+            Memory = "N/A"
         }
     }
 }
@@ -407,8 +519,6 @@ function Get-AvailableUpdates {
     try {
         $biosUpdates = Get-HPBIOSUpdates -Platform $PlatformID -ErrorAction SilentlyContinue
         $softpaqs = Get-HPSoftpaqList -Platform $PlatformID -Category "Firmware", "Driver" -ReleaseType "Critical", "Recommended" -ErrorAction SilentlyContinue
-        
-        Write-Log "Found $($softpaqs.Count) SoftPaqs and $(if($biosUpdates){1}else{0}) BIOS updates."
         return @{ BIOS = $biosUpdates; SoftPaqs = $softpaqs }
     } catch {
         return @{ BIOS = $null; SoftPaqs = @() }
@@ -419,18 +529,56 @@ function Invoke-HPUpdate {
     param(
         [string]$Hostname,
         [string]$PlatformID,
-        [string]$Type # BIOS or SoftPaq
+        [string]$Type, # BIOS or SoftPaq
+        [string]$TargetId # SoftPaq Number or BIOS Version
     )
     
     try {
         if ($Type -eq "BIOS") {
             Write-Host "Starting BIOS Update on ${Hostname}..."
             Get-HPBIOSUpdates -Platform $PlatformID -Flash -Yes -BitLocker Suspend -Target $Hostname -ErrorAction Stop
+            Write-Log "Triggered BIOS update on ${Hostname}."
         }
         else {
-            Write-Host "Starting SoftPaq Updates on ${Hostname}..."
-            $spList = Get-HPSoftpaqList -Platform $PlatformID -Category "Firmware", "Driver" -ReleaseType "Critical"
+            Write-Host "Starting SoftPaq Update ($TargetId) on ${Hostname}..."
             
+            # --- ENTERPRISE PUSH LOGIC ---
+            # 1. Download Local
+            $repoPath = $Global:Config.RepoPath
+            $softpaqFile = Get-HPSoftpaq -Number $TargetId -Directory $repoPath -SaveAs "$TargetId.exe" -ErrorAction SilentlyContinue
+            if (-not $softpaqFile) {
+                # Fallback if SaveAs didn't return file object (older versions of CMSL might differ)
+                $expectedPath = Join-Path $repoPath "$TargetId.exe"
+                if (Test-Path $expectedPath) { $softpaqFile = Get-Item $expectedPath }
+            }
+
+            if ($softpaqFile) {
+                Write-Log "Local SoftPaq cached: $($softpaqFile.FullName)"
+                
+                # 2. Push to Target (C$\Windows\Temp)
+                $destPath = "\\$Hostname\C$\Windows\Temp\$($softpaqFile.Name)"
+                try {
+                    Copy-Item -Path $softpaqFile.FullName -Destination $destPath -Force -ErrorAction Stop
+                    Write-Log "Pushed $TargetId to $Hostname via SMB."
+                    
+                    # 3. Execute Remote (WMI)
+                    $cmd = "C:\Windows\Temp\$($softpaqFile.Name) -s" # -s for Silent
+                    
+                    $opt = New-CimSessionOption -Protocol Dcom
+                    $session = New-CimSession -ComputerName $Hostname -SessionOption $opt -ErrorAction Stop
+                    Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
+                    Remove-CimSession $session
+                    
+                    Write-Log "Executed $TargetId on $Hostname (Agentless Push)."
+                    return $true
+                } catch {
+                    Write-Log "SMB Push failed ($($_.Exception.Message)). Falling back to remote download..."
+                }
+            } else {
+                Write-Log "Failed to download SoftPaq locally. Falling back to remote download..."
+            }
+
+            # --- FALLBACK: REMOTE DOWNLOAD (WinRM/WMI) ---
             $useDcom = $false
             try {
                 $test = New-CimSession -ComputerName $Hostname -ErrorAction Stop -OperationTimeoutSec 2
@@ -439,30 +587,28 @@ function Invoke-HPUpdate {
                 $useDcom = $true
             }
 
-            foreach ($sp in $spList) {
-                if (-not $useDcom) {
-                    Invoke-Command -ComputerName $Hostname -ScriptBlock {
-                        param($spNumber)
-                        Import-Module HP.Softpaq
-                        Get-HPSoftpaq -Number $spNumber -Install -Silent -ErrorAction SilentlyContinue
-                    } -ArgumentList $sp.Number
-                } else {
-                    Write-Log "WinRM unavailable for ${Hostname}, attempting WMI/DCOM launch for SoftPaq $($sp.Number)..."
-                    $opt = New-CimSessionOption -Protocol Dcom
-                    $session = New-CimSession -ComputerName $Hostname -SessionOption $opt -ErrorAction Stop
-                                        $cmd = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command & { Import-Module HP.Softpaq; Get-HPSoftpaq -Number $($sp.Number) -Install -Silent }"
-                                        
-                                        Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
-                                        
-                                        Remove-CimSession $session
-                                        Write-Log "Triggered background install for $($sp.Number) via WMI."
-                }
+            if (-not $useDcom) {
+                Invoke-Command -ComputerName $Hostname -ScriptBlock {
+                    param($spNumber)
+                    Import-Module HP.Softpaq
+                    Get-HPSoftpaq -Number $spNumber -Install -Silent -ErrorAction SilentlyContinue
+                } -ArgumentList $TargetId
+                Write-Log "Triggered SoftPaq ${TargetId} on ${Hostname} via WinRM."
+            } else {
+                Write-Log "WinRM unavailable for ${Hostname}, attempting WMI/DCOM launch for SoftPaq ${TargetId}..."
+                $opt = New-CimSessionOption -Protocol Dcom
+                $session = New-CimSession -ComputerName $Hostname -SessionOption $opt -ErrorAction Stop
+                $cmd = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command & { Import-Module HP.Softpaq; Get-HPSoftpaq -Number $TargetId -Install -Silent }"
+                Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
+                Remove-CimSession $session
+                Write-Log "Triggered background install for ${TargetId} via WMI."
             }
         }
-        [System.Windows.MessageBox]::Show("Update triggered on ${Hostname}", "Success")
+        return $true
     }
     catch {
-        [System.Windows.MessageBox]::Show("Update failed on ${Hostname}: $($_.Exception.Message)", "Error")
+        Write-Log "Update failed on ${Hostname}: $($_.Exception.Message)"
+        return $false
     }
 }
 
@@ -486,22 +632,36 @@ if ($dgComputers) {
     $dgComputers.add_SelectionChanged({
         $selected = $dgComputers.SelectedItem
         if ($selected -and $selected.PlatformID -ne "N/A") {
+            if ($txtDetailHost) { $txtDetailHost.Text = $selected.Hostname }
+            if ($txtDetailSerial) { $txtDetailSerial.Text = "SN: $($selected.SerialNumber)" }
+
             Show-Loading "Fetching updates for $($selected.Hostname)..."
             
             $window.Dispatcher.InvokeAsync({
-                if ($lstUpdates) {
-                    $lstUpdates.Items.Clear()
-                    $updates = Get-AvailableUpdates -PlatformID $selected.PlatformID
-                    
-                    if ($updates.BIOS) {
-                        [void]$lstUpdates.Items.Add("[BIOS] $($updates.BIOS.Version) - $($updates.BIOS.ReleaseDate)")
-                    }
-                    foreach ($sp in $updates.SoftPaqs) {
-                        [void]$lstUpdates.Items.Add("[SoftPaq] $($sp.Title) ($($sp.Number))")
-                    }
-                    if ($lstUpdates.Items.Count -eq 0) {
-                        [void]$lstUpdates.Items.Add("No updates available.")
-                    }
+                $availableUpdates.Clear()
+                $updates = Get-AvailableUpdates -PlatformID $selected.PlatformID
+                
+                if ($updates.BIOS) {
+                    $u = New-Object UpdateItem
+                    $u.Name = "[BIOS] $($updates.BIOS.Version) - $($updates.BIOS.ReleaseDate)"
+                    $u.ID = $updates.BIOS.Version
+                    $u.Type = "BIOS"
+                    $u.IsSelected = $true
+                    $availableUpdates.Add($u)
+                }
+                foreach ($sp in $updates.SoftPaqs) {
+                    $u = New-Object UpdateItem
+                    $u.Name = "[SoftPaq] $($sp.Title) ($($sp.Number))"
+                    $u.ID = $sp.Number
+                    $u.Type = "SoftPaq"
+                    $u.IsSelected = $true
+                    $availableUpdates.Add($u)
+                }
+                if ($availableUpdates.Count -eq 0) {
+                    $u = New-Object UpdateItem
+                    $u.Name = "No updates available."
+                    $u.IsSelected = $false
+                    $availableUpdates.Add($u)
                 }
                 Hide-Loading
             })
@@ -509,11 +669,92 @@ if ($dgComputers) {
     })
 }
 
+if ($btnUpdateSelected) {
+    $btnUpdateSelected.add_Click({
+        $selectedComputer = $dgComputers.SelectedItem
+        if (-not $selectedComputer) { return }
+        
+        $selectedUpdates = $availableUpdates | Where-Object { $_.IsSelected -eq $true }
+        if ($selectedUpdates.Count -eq 0) {
+             [System.Windows.MessageBox]::Show("No updates selected.", "Info")
+             return
+        }
+        
+        $result = [System.Windows.MessageBox]::Show("Install $($selectedUpdates.Count) selected update(s) on $($selectedComputer.Hostname)?", "Confirm Install", [System.Windows.MessageBoxButton]::YesNo)
+        if ($result -eq "Yes") {
+            Show-Loading "Installing updates..."
+            $window.Dispatcher.Invoke({
+                foreach ($update in $selectedUpdates) {
+                    Invoke-HPUpdate -Hostname $selectedComputer.Hostname -PlatformID $selectedComputer.PlatformID -Type $update.Type -TargetId $update.ID
+                }
+                [System.Windows.MessageBox]::Show("Updates triggered successfully.", "Success")
+                Hide-Loading
+            }, [System.Windows.Threading.DispatcherPriority]::Background)
+        }
+    })
+}
+
+# Context Menu Handlers
+if ($ctxPing) {
+    $ctxPing.add_Click({
+        $selected = $dgComputers.SelectedItem
+        if ($selected) {
+            Show-Loading "Pinging $($selected.Hostname)..."
+            $window.Dispatcher.InvokeAsync({
+                if (Test-Connection -ComputerName $selected.Hostname -Count 2 -Quiet) {
+                    [System.Windows.MessageBox]::Show("$($selected.Hostname) is ONLINE.", "Ping Result")
+                } else {
+                    [System.Windows.MessageBox]::Show("$($selected.Hostname) is UNREACHABLE.", "Ping Result")
+                }
+                Hide-Loading
+            })
+        }
+    })
+}
+
+if ($ctxOpenC) {
+    $ctxOpenC.add_Click({
+        $selected = $dgComputers.SelectedItem
+        if ($selected) {
+            Invoke-Item "\\$($selected.Hostname)\c$"
+        }
+    })
+}
+
+if ($ctxRestart) {
+    $ctxRestart.add_Click({
+        $selected = $dgComputers.SelectedItem
+        if ($selected) {
+             $result = [System.Windows.MessageBox]::Show("Are you sure you want to RESTART $($selected.Hostname)?", "Confirm Restart", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+            if ($result -eq "Yes") {
+                try {
+                    Restart-Computer -ComputerName $selected.Hostname -Force -ErrorAction Stop
+                    [System.Windows.MessageBox]::Show("Restart command sent.", "Success")
+                } catch {
+                    [System.Windows.MessageBox]::Show("Failed to restart: $($_.Exception.Message)", "Error")
+                }
+            }
+        }
+    })
+}
+
+if ($ctxRemove) {
+    $ctxRemove.add_Click({
+        $selected = $dgComputers.SelectedItem
+        if ($selected) {
+            $computers.Remove($selected)
+            Save-Inventory
+            Update-DashboardStats
+        }
+    })
+}
+
+
 if ($btnAddComputer) {
     $btnAddComputer.add_Click({
         $hostname = [Microsoft.VisualBasic.Interaction]::InputBox("Enter Hostname or IP Address", "Add Computer", "localhost")
         if ($hostname) {
-            Show-Loading "Connecting to ${hostname}..."
+            Show-Loading "Probing ${hostname}..."
             $window.Dispatcher.Invoke({
                 try {
                     $info = Get-RemoteSystemInfo -Hostname $hostname
@@ -525,6 +766,9 @@ if ($btnAddComputer) {
                     $c.Status = $info.Status
                     $c.StatusColor = $info.Color
                     $c.LastUpdated = $info.LastUpdated
+                    $c.OS = $info.OS
+                    $c.FreeDisk = $info.FreeDisk
+                    $c.Memory = $info.Memory
                     $computers.Add($c)
                     Save-Inventory
                     Update-DashboardStats
@@ -550,19 +794,17 @@ if ($btnImport) {
                 try {
                     $lines = Get-Content $dialog.FileName
                     foreach ($line in $lines) {
-                        if ($line -match "^#") { continue } # Skip comments
+                        if ($line -match "^#") { continue }
                         $hostToImport = $line.Trim()
-                        # Basic CSV handling (first column)
                         if ($hostToImport -match ",") { $hostToImport = ($hostToImport -split ",")[0].Trim() }
                         
                         if (-not [string]::IsNullOrWhiteSpace($hostToImport)) {
-                            # Check if exists
                             if (-not ($computers | Where-Object {$_.Hostname -eq $hostToImport})) {
                                 $c = New-Object HPComputer
                                 $c.Hostname = $hostToImport
-                                $c.Model = "Pending Discovery"
+                                $c.Model = "Pending"
                                 $c.Status = "Unknown"
-                                $c.StatusColor = "#757575" # Gray
+                                $c.StatusColor = "#757575"
                                 $c.PlatformID = "N/A"
                                 $computers.Add($c)
                             }
@@ -580,6 +822,24 @@ if ($btnImport) {
     })
 }
 
+if ($btnExport) {
+    $btnExport.add_Click({
+        $dialog = New-Object System.Windows.Forms.SaveFileDialog
+        $dialog.Filter = "CSV Files (*.csv)|*.csv"
+        $dialog.Title = "Export Inventory"
+        $dialog.FileName = "HP_Inventory_$(Get-Date -Format 'yyyyMMdd').csv"
+        
+        if ($dialog.ShowDialog() -eq "OK") {
+            try {
+                $computers | Select-Object Hostname,Model,SerialNumber,PlatformID,Status,LastUpdated,OS,FreeDisk,Memory | Export-Csv -Path $dialog.FileName -NoTypeInformation
+                [System.Windows.MessageBox]::Show("Export successful.", "Success")
+            } catch {
+                [System.Windows.MessageBox]::Show("Export failed: $($_.Exception.Message)", "Error")
+            }
+        }
+    })
+}
+
 if ($btnRefreshAll) {
     $btnRefreshAll.add_Click({
         Show-Loading "Refreshing all systems..."
@@ -592,6 +852,9 @@ if ($btnRefreshAll) {
                 $c.Status = $info.Status
                 $c.StatusColor = $info.Color
                 $c.LastUpdated = $info.LastUpdated
+                $c.OS = $info.OS
+                $c.FreeDisk = $info.FreeDisk
+                $c.Memory = $info.Memory
             }
             if ($dgComputers) { $dgComputers.Items.Refresh() }
             if ($txtLastRefresh) { $txtLastRefresh.Text = Get-Date -Format "HH:mm:ss" }
@@ -606,58 +869,11 @@ if ($btnSaveSettings) {
     $btnSaveSettings.add_Click({
         $Global:Config.Timeout = $txtTimeout.Text
         $Global:Config.LogPath = $txtLogPath.Text
+        $Global:Config.RepoPath = $txtRepoPath.Text
         $Global:Config.AutoRefresh = $chkAutoRefresh.IsChecked
         Save-Config
         [System.Windows.MessageBox]::Show("Settings saved!", "Success")
     })
-}
-
-if ($btnUpdateBios) {
-    $btnUpdateBios.add_Click({
-        $selected = $dgComputers.SelectedItem
-        if ($selected -and $selected.PlatformID -ne "N/A") {
-            $result = [System.Windows.MessageBox]::Show("Are you sure you want to trigger a BIOS update for $($selected.Hostname)?", "Confirm BIOS Update", [System.Windows.MessageBoxButton]::YesNo)
-            if ($result -eq "Yes") {
-                Show-Loading "Starting BIOS Update..."
-                $window.Dispatcher.Invoke({
-                    Invoke-HPUpdate -Hostname $selected.Hostname -PlatformID $selected.PlatformID -Type "BIOS"
-                    Hide-Loading
-                }, [System.Windows.Threading.DispatcherPriority]::Background)
-            }
-        }
-    })
-}
-
-if ($btnUpdateSoftpaqs) {
-    $btnUpdateSoftpaqs.add_Click({
-        $selected = $dgComputers.SelectedItem
-        if ($selected -and $selected.PlatformID -ne "N/A") {
-             $result = [System.Windows.MessageBox]::Show("Are you sure you want to trigger SoftPaq updates for $($selected.Hostname)?", "Confirm SoftPaq Updates", [System.Windows.MessageBoxButton]::YesNo)
-            if ($result -eq "Yes") {
-                Show-Loading "Starting SoftPaq Update..."
-                $window.Dispatcher.Invoke({
-                    Invoke-HPUpdate -Hostname $selected.Hostname -PlatformID $selected.PlatformID -Type "SoftPaq"
-                    Hide-Loading
-                }, [System.Windows.Threading.DispatcherPriority]::Background)
-            }
-        }
-    })
-}
-
-if ($dgComputers) {
-    $contextMenu = New-Object System.Windows.Controls.ContextMenu
-    $deleteMenuItem = New-Object System.Windows.Controls.MenuItem
-    $deleteMenuItem.Header = "Remove from Inventory"
-    $deleteMenuItem.add_Click({
-        $selected = $dgComputers.SelectedItem
-        if ($selected) {
-            $computers.Remove($selected)
-            Save-Inventory
-            Update-DashboardStats
-        }
-    })
-    [void]$contextMenu.Items.Add($deleteMenuItem)
-    $dgComputers.ContextMenu = $contextMenu
 }
 
 # --- START APP ---
