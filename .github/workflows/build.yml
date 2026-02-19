@@ -40,6 +40,9 @@ jobs:
             exit 1 
         }
 
+        # Create a copy for the installer source (renamed to simple name for Inno Setup)
+        Copy-Item $portableName "CentralHPUpdater.exe"
+
     - name: Compile Inno Setup Installer
       shell: powershell
       run: |
