@@ -386,11 +386,15 @@ function Get-RemoteSystemInfo {
     }
     catch {
         Write-Log "Failed to connect to ${Hostname}: $($_.Exception.Message)"
+        $status = "Offline"
+        if ($_.Exception.Message -match "Access is denied") {
+            $status = "Access Denied"
+        }
         return @{
             Model = "Unknown"
             Serial = "N/A"
             PlatformID = "N/A"
-            Status = "Offline"
+            Status = $status
             Color = "#E57373" # Red
             LastUpdated = "Never"
         }
@@ -511,19 +515,25 @@ if ($btnAddComputer) {
         if ($hostname) {
             Show-Loading "Connecting to ${hostname}..."
             $window.Dispatcher.Invoke({
-                $info = Get-RemoteSystemInfo -Hostname $hostname
-                $c = New-Object HPComputer
-                $c.Hostname = $hostname
-                $c.Model = $info.Model
-                $c.SerialNumber = $info.Serial
-                $c.PlatformID = $info.PlatformID
-                $c.Status = $info.Status
-                $c.StatusColor = $info.Color
-                $c.LastUpdated = $info.LastUpdated
-                $computers.Add($c)
-                Save-Inventory
-                Update-DashboardStats
-                Hide-Loading
+                try {
+                    $info = Get-RemoteSystemInfo -Hostname $hostname
+                    $c = New-Object HPComputer
+                    $c.Hostname = $hostname
+                    $c.Model = $info.Model
+                    $c.SerialNumber = $info.Serial
+                    $c.PlatformID = $info.PlatformID
+                    $c.Status = $info.Status
+                    $c.StatusColor = $info.Color
+                    $c.LastUpdated = $info.LastUpdated
+                    $computers.Add($c)
+                    Save-Inventory
+                    Update-DashboardStats
+                } catch {
+                    Write-Log "Error adding computer: $($_.Exception.Message)"
+                    [System.Windows.MessageBox]::Show("Error adding computer: $($_.Exception.Message)", "Error")
+                } finally {
+                    Hide-Loading
+                }
             }, [System.Windows.Threading.DispatcherPriority]::Background)
         }
     })
