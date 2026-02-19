@@ -440,10 +440,12 @@ function Invoke-HPUpdate {
                     Write-Log "WinRM unavailable for ${Hostname}, attempting WMI/DCOM launch for SoftPaq $($sp.Number)..."
                     $opt = New-CimSessionOption -Protocol Dcom
                     $session = New-CimSession -ComputerName $Hostname -SessionOption $opt -ErrorAction Stop
-                    $cmd = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command `& { Import-Module HP.Softpaq; Get-HPSoftpaq -Number $($sp.Number) -Install -Silent }`"
-                    Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
-                    Remove-CimSession $session
-                    Write-Log "Triggered background install for $($sp.Number) via WMI."
+                                        $cmd = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command & { Import-Module HP.Softpaq; Get-HPSoftpaq -Number $($sp.Number) -Install -Silent }"
+                                        
+                                        Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
+                                        
+                                        Remove-CimSession $session
+                                        Write-Log "Triggered background install for $($sp.Number) via WMI."
                 }
             }
         }
