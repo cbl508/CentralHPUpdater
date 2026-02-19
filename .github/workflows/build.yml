@@ -16,47 +16,47 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install ps2exe
+    - name: Install Dependencies
       shell: powershell
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
         Install-Module -Name ps2exe -Force -Scope CurrentUser -AllowClobber
+        choco install innosetup --no-progress
 
     - name: Compile PowerShell to EXE
       shell: powershell
       run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        
-        # Get Version from Tag
         $version = "${{ github.ref_name }}".TrimStart('v')
-        if (-not $version) { $version = "1.0.0" }
         Write-Host "Building version: $version"
 
         cd HP.UpdateManager.Gui
-        Import-Module ps2exe
         
         # Compile Portable EXE
         $portableName = "CentralHPUpdater-$version-portable.exe"
-        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile $portableName -noConsole -verbose
+        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile $portableName -noConsole
         
         if (-not (Test-Path $portableName)) { 
             Write-Error "Portable EXE compilation failed!"
             exit 1 
         }
 
-        # Create a copy for the installer source (renamed to simple name for Inno Setup)
-        Copy-Item $portableName "CentralHPUpdater.exe"
-
     - name: Compile Inno Setup Installer
       shell: powershell
       run: |
-        $iscc = Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup *" -Filter "ISCC.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
-        if (-not $iscc) { throw "ISCC.exe not found!" }
+        $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+        if (-not (Test-Path $iscc)) {
+            $iscc = Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup *" -Filter "ISCC.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+        }
+        
+        if (-not $iscc) { 
+            Write-Warning "ISCC.exe not found. Skipping Installer compilation."
+            return
+        }
         
         $version = "${{ github.ref_name }}".TrimStart('v')
-        if (-not $version) { $version = "1.0.0" }
         
         # Define AppVersion constant for Inno Setup
+        # We need to ensure the Output directory exists or is defined in ISS
         $args = @("/DAppVersion=$version", "HP.UpdateManager.Gui/installer.iss")
         & $iscc $args
 
@@ -66,42 +66,26 @@ jobs:
         New-Item -ItemType Directory -Force -Path "dist"
         
         $version = "${{ github.ref_name }}".TrimStart('v')
-        if (-not $version) { $version = "1.0.0" }
         
         # Move Portable EXE
         $portableSrc = "HP.UpdateManager.Gui/CentralHPUpdater-$version-portable.exe"
         if (Test-Path $portableSrc) {
             Move-Item $portableSrc "dist/"
-        } else {
-            Write-Warning "Portable EXE not found at $portableSrc"
         }
 
-        # Move Installer
-        # Inno Setup output name is CentralHPUpdaterInstaller.exe based on updated ISS
+        # Move Installer (if it exists)
         $installerSrc = "HP.UpdateManager.Gui/Output/CentralHPUpdaterInstaller.exe"
         if (Test-Path $installerSrc) {
             $installerDest = "dist/CentralHPUpdater-$version-Setup.exe"
-            Rename-Item $installerSrc -NewName (Split-Path $installerDest -Leaf)
-            Move-Item "HP.UpdateManager.Gui/Output/$(Split-Path $installerDest -Leaf)" "dist/"
-        } else {
-            Write-Warning "Installer not found at $installerSrc"
-            Get-ChildItem -Recurse "HP.UpdateManager.Gui"
+            Move-Item $installerSrc $installerDest
         }
 
         Get-ChildItem "dist"
 
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: HP-Update-Manager-Build
-        path: dist/*
-
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
         files: dist/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
