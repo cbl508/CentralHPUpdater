@@ -97,83 +97,128 @@
 
             <!-- Header -->
             <Grid Grid.Row="0" Margin="0,0,0,20">
-                <TextBlock Name="TxtTitle" Text="Computer Inventory" FontSize="24" FontWeight="SemiBold"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Name="TxtTitle" Text="Dashboard" FontSize="24" FontWeight="SemiBold"/>
+                <StackPanel Name="InventoryActions" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
                     <Button Name="BtnAddComputer" Content="+ Add Computer" Style="{StaticResource ActionButton}" Background="#007ACC"/>
                     <Button Name="BtnRefreshAll" Content="Refresh All" Style="{StaticResource ActionButton}" Margin="10,0,0,0"/>
                 </StackPanel>
             </Grid>
 
-            <!-- Main View (Inventory Grid) -->
+            <!-- Content Views -->
             <Grid Grid.Row="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="3*"/>
-                    <RowDefinition Height="5"/>
-                    <RowDefinition Height="2*"/>
-                </Grid.RowDefinitions>
+                <!-- Dashboard View -->
+                <Grid Name="ViewDashboard" Visibility="Visible">
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Background="#2D2D30" Width="200" Height="120" CornerRadius="8" Margin="0,0,15,15">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="Total Systems" Foreground="#CCCCCC" HorizontalAlignment="Center"/>
+                                <TextBlock Name="TxtTotalSystems" Text="0" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#2D2D30" Width="200" Height="120" CornerRadius="8" Margin="0,0,15,15">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="Online" Foreground="#CCCCCC" HorizontalAlignment="Center"/>
+                                <TextBlock Name="TxtOnlineSystems" Text="0" FontSize="36" FontWeight="Bold" Foreground="#2D5A27" HorizontalAlignment="Center" Margin="0,5"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#2D2D30" Width="200" Height="120" CornerRadius="8" Margin="0,0,15,15">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="Offline" Foreground="#CCCCCC" HorizontalAlignment="Center"/>
+                                <TextBlock Name="TxtOfflineSystems" Text="0" FontSize="36" FontWeight="Bold" Foreground="#A03B3B" HorizontalAlignment="Center" Margin="0,5"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#2D2D30" Width="200" Height="120" CornerRadius="8" Margin="0,0,15,15">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="Last Refresh" Foreground="#CCCCCC" HorizontalAlignment="Center"/>
+                                <TextBlock Name="TxtLastRefresh" Text="Never" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,5"/>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </Grid>
 
-                <Border Grid.Row="0" Background="#2D2D30" CornerRadius="8" Padding="1">
-                    <DataGrid Name="DgComputers" Background="Transparent" BorderThickness="0" 
-                              AutoGenerateColumns="False" CanUserAddRows="False" 
-                              RowBackground="#2D2D30" AlternatingRowBackground="#333337"
-                              Foreground="White" GridLinesVisibility="None"
-                              HeadersVisibility="Column" RowHeaderWidth="0">
-                        <DataGrid.Resources>
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="#3E3E42"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Padding" Value="10,8"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                            <Style TargetType="DataGridCell">
-                                <Setter Property="Padding" Value="10"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                            </Style>
-                        </DataGrid.Resources>
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Hostname" Binding="{Binding Hostname}" Width="150"/>
-                            <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="200"/>
-                            <DataGridTextColumn Header="Serial" Binding="{Binding SerialNumber}" Width="120"/>
-                            <DataGridTextColumn Header="Platform ID" Binding="{Binding PlatformID}" Width="100"/>
-                            <DataGridTemplateColumn Header="Status" Width="120">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border Background="{Binding StatusColor}" CornerRadius="10" Padding="8,2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding Status}" Foreground="White" FontSize="11"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Last Updated" Binding="{Binding LastUpdated}" Width="150"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Border>
+                <!-- Inventory View -->
+                <Grid Name="ViewInventory" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="3*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="2*"/>
+                    </Grid.RowDefinitions>
 
-                <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="#3E3E42" ShowsPreview="True" Height="5"/>
-
-                <!-- Details and Logs -->
-                <Grid Grid.Row="2" Margin="0,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Background="#2D2D30" CornerRadius="8" Margin="0,0,5,0">
-                        <DockPanel Margin="10">
-                            <TextBlock DockPanel.Dock="Top" Text="Available Updates" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <ListBox Name="LstUpdates" Background="Transparent" Foreground="White" BorderThickness="0"/>
-                        </DockPanel>
+                    <Border Grid.Row="0" Background="#2D2D30" CornerRadius="8" Padding="1">
+                        <DataGrid Name="DgComputers" Background="Transparent" BorderThickness="0" 
+                                  AutoGenerateColumns="False" CanUserAddRows="False" 
+                                  RowBackground="#2D2D30" AlternatingRowBackground="#333337"
+                                  Foreground="White" GridLinesVisibility="None"
+                                  HeadersVisibility="Column" RowHeaderWidth="0">
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="#3E3E42"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Padding" Value="10,8"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding" Value="10"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Hostname" Binding="{Binding Hostname}" Width="150"/>
+                                <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="200"/>
+                                <DataGridTextColumn Header="Serial" Binding="{Binding SerialNumber}" Width="120"/>
+                                <DataGridTextColumn Header="Platform ID" Binding="{Binding PlatformID}" Width="100"/>
+                                <DataGridTemplateColumn Header="Status" Width="120">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding StatusColor}" CornerRadius="10" Padding="8,2" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding Status}" Foreground="White" FontSize="11"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Last Updated" Binding="{Binding LastUpdated}" Width="150"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Border>
 
-                    <Border Grid.Column="1" Background="#2D2D30" CornerRadius="8" Margin="5,0,0,0">
-                        <DockPanel Margin="10">
-                            <TextBlock DockPanel.Dock="Top" Text="Operation Logs" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <TextBox Name="TxtLog" Background="#1E1E1E" Foreground="#A9B7C6" BorderThickness="0" 
-                                     IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" 
-                                     FontFamily="Consolas" FontSize="11"/>
-                        </DockPanel>
+                    <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="#3E3E42" ShowsPreview="True" Height="5"/>
+
+                    <!-- Details -->
+                    <Grid Grid.Row="2" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="#2D2D30" CornerRadius="8" Margin="0,0,5,0">
+                            <DockPanel Margin="10">
+                                <TextBlock DockPanel.Dock="Top" Text="Available Updates" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                    <Button Name="BtnUpdateBios" Content="Install BIOS" Style="{StaticResource GridButton}" Background="#A03B3B" Width="100" Margin="5,0"/>
+                                    <Button Name="BtnUpdateSoftpaqs" Content="Install SoftPaqs" Style="{StaticResource GridButton}" Background="#007ACC" Width="100"/>
+                                </StackPanel>
+                                <ListBox Name="LstUpdates" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                            </DockPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="#2D2D30" CornerRadius="8" Margin="5,0,0,0">
+                            <DockPanel Margin="10">
+                                <TextBlock DockPanel.Dock="Top" Text="Notes" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Select a system to view available updates. Ensure remote systems have WinRM enabled for discovery and updates." 
+                                           Foreground="#CCCCCC" TextWrapping="Wrap" FontSize="12"/>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- Logs View -->
+                <Grid Name="ViewLogs" Visibility="Collapsed">
+                    <Border Background="#2D2D30" CornerRadius="8">
+                        <TextBox Name="TxtLog" Background="#1E1E1E" Foreground="#A9B7C6" BorderThickness="0" 
+                                 IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" 
+                                 FontFamily="Consolas" FontSize="11" Margin="10"/>
                     </Border>
                 </Grid>
             </Grid>
