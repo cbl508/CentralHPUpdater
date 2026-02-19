@@ -122,8 +122,8 @@
 
                 <!-- App Brand -->
                 <StackPanel Grid.Row="0" Margin="25,35,20,40">
-                    <TextBlock Text="HP MANAGER" FontSize="22" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" LetterSpacing="1"/>
-                    <TextBlock Text="ENTERPRISE EDITION" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="2,2,0,0" LetterSpacing="2"/>
+                    <TextBlock Text="HP MANAGER" FontSize="22" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                    <TextBlock Text="ENTERPRISE EDITION" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="2,2,0,0"/>
                 </StackPanel>
 
                 <!-- Navigation -->
@@ -184,7 +184,7 @@
                         <!-- Total Systems Card -->
                         <Border Style="{StaticResource ModernCard}" Width="280" Height="160" Margin="0,0,25,25">
                             <Grid>
-                                <TextBlock Text="TOTAL SYSTEMS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" LetterSpacing="1"/>
+                                <TextBlock Text="TOTAL SYSTEMS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top"/>
                                 <TextBlock Name="TxtTotalSystems" Text="0" FontSize="56" FontWeight="Light" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                                 <Path Data="{StaticResource IconComputer}" Fill="{StaticResource AccentBrush}" Width="40" Height="40" Stretch="Uniform" VerticalAlignment="Bottom" HorizontalAlignment="Right" Opacity="0.2"/> 
                             </Grid>
@@ -193,7 +193,7 @@
                         <!-- Online Systems Card -->
                         <Border Style="{StaticResource ModernCard}" Width="280" Height="160" Margin="0,0,25,25">
                             <Grid>
-                                <TextBlock Text="ONLINE" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" LetterSpacing="1"/>
+                                <TextBlock Text="ONLINE" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top"/>
                                 <TextBlock Name="TxtOnlineSystems" Text="0" FontSize="56" FontWeight="Light" Foreground="{StaticResource SuccessBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                                 <Border Background="{StaticResource SuccessBrush}" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                             </Grid>
@@ -202,7 +202,7 @@
                         <!-- Offline Systems Card -->
                         <Border Style="{StaticResource ModernCard}" Width="280" Height="160" Margin="0,0,25,25">
                             <Grid>
-                                <TextBlock Text="OFFLINE / ERROR" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" LetterSpacing="1"/>
+                                <TextBlock Text="OFFLINE / ERROR" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top"/>
                                 <TextBlock Name="TxtOfflineSystems" Text="0" FontSize="56" FontWeight="Light" Foreground="{StaticResource ErrorBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                                 <Border Background="{StaticResource ErrorBrush}" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                             </Grid>
@@ -211,7 +211,7 @@
                         <!-- Last Refresh Card -->
                         <Border Style="{StaticResource ModernCard}" Width="280" Height="160" Margin="0,0,25,25">
                             <Grid>
-                                <TextBlock Text="LAST REFRESH" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" LetterSpacing="1"/>
+                                <TextBlock Text="LAST REFRESH" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top"/>
                                 <TextBlock Name="TxtLastRefresh" Text="Never" FontSize="24" FontWeight="Regular" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                             </Grid>
                         </Border>
@@ -322,7 +322,7 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 
-                                <TextBlock Grid.Row="0" Text="AVAILABLE UPDATES" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,10" LetterSpacing="1"/>
+                                <TextBlock Grid.Row="0" Text="AVAILABLE UPDATES" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,10"/>
                                 
                                 <ListBox Name="LstUpdates" Grid.Row="1" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13">
                                     <ListBox.ItemContainerStyle>
@@ -361,7 +361,7 @@
                         <!-- Info Panel -->
                         <Border Grid.Column="1" Style="{StaticResource ModernCard}" Margin="10,10,0,0" Background="#1E1E1E">
                             <StackPanel>
-                                <TextBlock Text="SELECTED SYSTEM" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,15" LetterSpacing="1"/>
+                                <TextBlock Text="SELECTED SYSTEM" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,15"/>
                                 <TextBlock Name="TxtDetailHost" Text="None Selected" FontSize="18" Foreground="White" Margin="0,0,0,5"/>
                                 <TextBlock Name="TxtDetailSerial" Text="SN: -" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,20"/>
                                 
@@ -415,7 +415,7 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <Border Grid.Row="0" Background="#2A2D2E" Padding="15,10" CornerRadius="6,6,0,0">
-                                <TextBlock Text="SYSTEM ACTIVITY LOG" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" LetterSpacing="1"/>
+                                <TextBlock Text="SYSTEM ACTIVITY LOG" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}"/>
                             </Border>
                             <TextBox Name="TxtLog" Grid.Row="1" Background="#121212" Foreground="#00E676" BorderThickness="0" 
                                      IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" 
@@ -432,7 +432,7 @@
             <Border Background="#252526" CornerRadius="8" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40" Effect="{StaticResource {x:Static DropShadowEffect.Default}}">
                 <StackPanel>
                     <ProgressBar Name="PbLoading" Width="200" Height="4" IsIndeterminate="True" Foreground="{StaticResource AccentBrush}" Background="#333333" BorderThickness="0" Margin="0,0,0,20"/>
-                    <TextBlock Text="PROCESSING" FontSize="14" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" LetterSpacing="1"/>
+                    <TextBlock Text="PROCESSING" FontSize="14" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
                     <TextBlock Name="TxtLoadingStatus" Text="Please wait..." FontSize="12" Foreground="#B0B0B0" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                 </StackPanel>
             </Border>
