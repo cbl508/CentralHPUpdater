@@ -16,7 +16,7 @@ using namespace HP.CMSLHelper
 if (Test-Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll") {
   Add-Type -Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll"
 }
-else{
+else {
   Add-Type -Path "$PSScriptRoot\..\..\HP.Private\1.8.5\HP.CMSLHelper.dll"
 }
 
@@ -33,7 +33,7 @@ enum LogSeverity{
 }
 
 function Get-HPPrivateThreadID { [Threading.Thread]::CurrentThread.ManagedThreadId }
-function Get-HPPrivateUserIdentity { [System.Security.Principal.WindowsIdentity]::GetCurrent().Name }
+function Get-HPPrivateUserIdentity { try { $id = [System.Security.Principal.WindowsIdentity]::GetCurrent(); if ($null -ne $id) { return $id.Name } } catch { return $env:username }; return $env:username }
 function Get-HPPrivateLogVar { $Env:HPCMSL_LOG_FORMAT }
 
 <#
@@ -121,23 +121,22 @@ function Get-HPPrivateLogVar { $Env:HPCMSL_LOG_FORMAT }
 
 
 #>
-function Send-ToHPSyslog
-{
+function Send-ToHPSyslog {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Send-ToHPSyslog")]
   [Alias('Send-ToSyslog')]
   param
   (
-    [ValidateNotNullOrEmpty()][Parameter(Position = 0,ValueFromPipeline = $True,Mandatory = $True)] $message,
-    [Parameter(Position = 1,Mandatory = $false)] [syslog_severity_t]$severity = [syslog_severity_t]::informational,
-    [Parameter(Position = 2,Mandatory = $false)] [syslog_facility_t]$facility = [syslog_facility_t]::user_message,
-    [Parameter(Position = 3,Mandatory = $false)] [string]$clientname,
-    [Parameter(Position = 4,Mandatory = $false)] [string]$timestamp,
-    [Parameter(Position = 5,Mandatory = $false)] [int]$port = $HPSINK:HPSINK_SYSLOG_MESSAGE_TARGET_PORT,
-    [Parameter(Position = 6,Mandatory = $false)] [switch]$tcp,
-    [ValidateSet("octet-counting","non-transparent-framing")][Parameter(Position = 7,Mandatory = $false)] [string]$tcpframing = $ENV:HPSINK_SYSLOG_MESSAGE_TCPFRAMING,
-    [Parameter(Position = 8,Mandatory = $false)] [int]$maxlen = $ENV:HPSINK_SYSLOG_MESSAGE_MAXLEN,
-    [Parameter(Position = 9,Mandatory = $false)] [switch]$PassThru,
-    [Parameter(Position = 10,Mandatory = $false)] [string]$target = $ENV:HPSINK_SYSLOG_MESSAGE_TARGET
+    [ValidateNotNullOrEmpty()][Parameter(Position = 0, ValueFromPipeline = $True, Mandatory = $True)] $message,
+    [Parameter(Position = 1, Mandatory = $false)] [syslog_severity_t]$severity = [syslog_severity_t]::informational,
+    [Parameter(Position = 2, Mandatory = $false)] [syslog_facility_t]$facility = [syslog_facility_t]::user_message,
+    [Parameter(Position = 3, Mandatory = $false)] [string]$clientname,
+    [Parameter(Position = 4, Mandatory = $false)] [string]$timestamp,
+    [Parameter(Position = 5, Mandatory = $false)] [int]$port = $HPSINK:HPSINK_SYSLOG_MESSAGE_TARGET_PORT,
+    [Parameter(Position = 6, Mandatory = $false)] [switch]$tcp,
+    [ValidateSet("octet-counting", "non-transparent-framing")][Parameter(Position = 7, Mandatory = $false)] [string]$tcpframing = $ENV:HPSINK_SYSLOG_MESSAGE_TCPFRAMING,
+    [Parameter(Position = 8, Mandatory = $false)] [int]$maxlen = $ENV:HPSINK_SYSLOG_MESSAGE_MAXLEN,
+    [Parameter(Position = 9, Mandatory = $false)] [switch]$PassThru,
+    [Parameter(Position = 10, Mandatory = $false)] [string]$target = $ENV:HPSINK_SYSLOG_MESSAGE_TARGET
   )
 
   # Create a UDP Client Object
@@ -166,25 +165,24 @@ function Send-ToHPSyslog
     Write-Verbose "TCP Connection to $target`:$port"
     $client = New-Object System.Net.Sockets.TcpClient
   }
-  else
-  {
+  else {
     Write-Verbose "UDP Connection to $target`:$port"
     $client = New-Object System.Net.Sockets.UdpClient
   }
 
   try {
-    $client.Connect($target,$port)
+    $client.Connect($target, $port)
   }
   catch {
     if ($_.Exception.innerException -ne $null) {
       Write-Error $_.Exception.innerException.Message -Category ConnectionError -ErrorAction Stop
-    } else {
+    }
+    else {
       Write-Error $_.Exception.Message -Category ConnectionError -ErrorAction Stop
     }
   }
 
-  if ($use_tcp -and -not $client.Connected)
-  {
+  if ($use_tcp -and -not $client.Connected) {
     $prefix = "udp"
     if ($use_tcp) { $prefix = $tcp }
     throw "Could not connect to syslog host $prefix`://$target`:$port"
@@ -206,7 +204,7 @@ function Send-ToHPSyslog
     Write-Verbose "Defaulting to timestamp = $timestamp"
   }
 
-  $msg = "<{0}>{1} {2} {3}" -f $priority,$timestamp,$hostname,$message
+  $msg = "<{0}>{1} {2} {3}" -f $priority, $timestamp, $hostname, $message
 
   Write-Verbose ("Sending the message: $msg")
   if ($use_tcp) {
@@ -216,32 +214,31 @@ function Send-ToHPSyslog
     if ($msg.Length -gt $maxlen) {
       $maxlen = $maxlen - ([string]$maxlen).Length
       Write-Verbose ("This message has been truncated because maximum effective length is $maxlen but the message is  $($msg.length) ")
-      $msg = $msg.substring(0,$maxlen - ([string]$maxlen).Length)
+      $msg = $msg.substring(0, $maxlen - ([string]$maxlen).Length)
     }
 
     switch ($tcpframing) {
       "octet-counting" {
         Write-Verbose "Encoding TCP payload with 'octet-counting'"
-        $encoded = '{0} {1}' -f $msg.Length,$msg
+        $encoded = '{0} {1}' -f $msg.Length, $msg
         $bytes = [System.Text.Encoding]::ASCII.GetBytes($encoded)
       }
 
       "non-transparent-framing" {
         Write-Verbose "Encoding with 'non-transparent-framing'"
-        $encoded = '{0}{1}' -f $msg.Length,$msg
+        $encoded = '{0}{1}' -f $msg.Length, $msg
         $bytes = [System.Text.Encoding]::ASCII.GetBytes($encoded)
       }
     }
 
     try {
-      [void]$client.getStream().Write($bytes,0,$bytes.Length)
+      [void]$client.getStream().Write($bytes, 0, $bytes.Length)
     }
     catch {
       throw ("Could not send syslog message: $($_.Exception.Message)")
     }
   }
-  else
-  {
+  else {
 
     Write-Verbose ("Sending via UDP")
     try {
@@ -250,14 +247,13 @@ function Send-ToHPSyslog
         Write-Verbose ("This message has been truncated, because maximum length is $maxlen but the message is  $($bytes.length) ")
         $bytes = $bytes[0..($maxlen - 1)]
       }
-      [void]$client.Send($bytes,$bytes.Length)
+      [void]$client.Send($bytes, $bytes.Length)
     }
     catch {
       if (-not $PassThru.IsPresent) {
         throw ("Could not send syslog message: $($_.Exception.Message)")
       }
-      else
-      {
+      else {
         Write-Error -Message $_.Exception.Message -ErrorAction Continue
       }
 
@@ -309,15 +305,14 @@ function Send-ToHPSyslog
 .EXAMPLE
   Register-HPEventLogSink
 #>
-function Register-HPEventLogSink
-{
+function Register-HPEventLogSink {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Register-HPEventLogSink")]
   [Alias('Register-EventLogSink')]
   param
   (
-    [Parameter(Position = 0,Mandatory = $false)] [string]$logname = $ENV:HPSINK_EVENTLOG_MESSAGE_LOG,
-    [Parameter(Position = 1,Mandatory = $false)] [string]$source = $ENV:HPSINK_EVENTLOG_MESSAGE_SOURCE,
-    [Parameter(Position = 2,Mandatory = $false)] [string]$target = $ENV:HPSINK_EVENTLOG_MESSAGE_TARGET
+    [Parameter(Position = 0, Mandatory = $false)] [string]$logname = $ENV:HPSINK_EVENTLOG_MESSAGE_LOG,
+    [Parameter(Position = 1, Mandatory = $false)] [string]$source = $ENV:HPSINK_EVENTLOG_MESSAGE_SOURCE,
+    [Parameter(Position = 2, Mandatory = $false)] [string]$target = $ENV:HPSINK_EVENTLOG_MESSAGE_TARGET
   )
 
 
@@ -330,10 +325,10 @@ function Register-HPEventLogSink
   Write-Verbose "Registering source $logname / $source"
   $params = @{
     LogName = $logname
-    source = $source
+    source  = $source
   }
 
-  if ($target -ne ".") { $params.Add("ComputerName",$target) }
+  if ($target -ne ".") { $params.Add("ComputerName", $target) }
   New-EventLog @params
 }
 
@@ -374,14 +369,13 @@ As a result, it is important to start with a new log when switching modes. Writi
 .EXAMPLE
   Unregister-HPEventLogSink
 #>
-function Unregister-HPEventLogSink
-{
+function Unregister-HPEventLogSink {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Unregister-HPEventLogSink")]
   [Alias('Unregister-EventLogSink')]
   param
   (
-    [Parameter(Position = 0,Mandatory = $false)] [string]$source = $ENV:HPSINK_EVENTLOG_MESSAGE_SOURCE,
-    [Parameter(Position = 1,Mandatory = $false)] [string]$target = $ENV:HPSINK_EVENTLOG_MESSAGE_TARGET
+    [Parameter(Position = 0, Mandatory = $false)] [string]$source = $ENV:HPSINK_EVENTLOG_MESSAGE_SOURCE,
+    [Parameter(Position = 1, Mandatory = $false)] [string]$target = $ENV:HPSINK_EVENTLOG_MESSAGE_TARGET
   )
 
   #defaults (change these in environment)
@@ -394,7 +388,7 @@ function Unregister-HPEventLogSink
     source = $source
   }
 
-  if ($target -ne ".") { $params.Add("ComputerName",$target) }
+  if ($target -ne ".") { $params.Add("ComputerName", $target) }
   Remove-EventLog @params
 }
 
@@ -472,22 +466,21 @@ function Unregister-HPEventLogSink
 
 
 #>
-function Send-ToHPEventLog
-{
+function Send-ToHPEventLog {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Send-ToHPEventLog")]
   [Alias('Send-ToEventLog')]
   param
   (
 
-    [Parameter(Position = 0,Mandatory = $false)] [string]$source = $ENV:HPSINK_EVENTLOG_MESSAGE_SOURCE,
-    [Parameter(Position = 1,Mandatory = $false)] [int]$id = 0,
-    [ValidateNotNullOrEmpty()][Parameter(Position = 2,ValueFromPipeline = $true,Mandatory = $True)] $message,
-    [Parameter(Position = 3,Mandatory = $false)] [eventlog_severity_t]$severity = [eventlog_severity_t]::informational,
-    [Parameter(Position = 4,Mandatory = $false)] [int16]$category = $ENV:HPSINK_EVENTLOG_MESSAGE_CATEGORY,
-    [Parameter(Position = 5,Mandatory = $false)] [string]$logname = $ENV:HPSINK_EVENTLOG_MESSAGE_LOG,
-    [Parameter(Position = 6,Mandatory = $false)] [byte[]]$rawdata = $null,
-    [Parameter(Position = 7,Mandatory = $false)] [string]$target = $ENV:HPSINK_EVENTLOG_MESSAGE_TARGET,
-    [Parameter(Position = 8,Mandatory = $false)] [switch]$PassThru
+    [Parameter(Position = 0, Mandatory = $false)] [string]$source = $ENV:HPSINK_EVENTLOG_MESSAGE_SOURCE,
+    [Parameter(Position = 1, Mandatory = $false)] [int]$id = 0,
+    [ValidateNotNullOrEmpty()][Parameter(Position = 2, ValueFromPipeline = $true, Mandatory = $True)] $message,
+    [Parameter(Position = 3, Mandatory = $false)] [eventlog_severity_t]$severity = [eventlog_severity_t]::informational,
+    [Parameter(Position = 4, Mandatory = $false)] [int16]$category = $ENV:HPSINK_EVENTLOG_MESSAGE_CATEGORY,
+    [Parameter(Position = 5, Mandatory = $false)] [string]$logname = $ENV:HPSINK_EVENTLOG_MESSAGE_LOG,
+    [Parameter(Position = 6, Mandatory = $false)] [byte[]]$rawdata = $null,
+    [Parameter(Position = 7, Mandatory = $false)] [string]$target = $ENV:HPSINK_EVENTLOG_MESSAGE_TARGET,
+    [Parameter(Position = 8, Mandatory = $false)] [switch]$PassThru
   )
 
   #defaults (change these in environment)
@@ -498,20 +491,20 @@ function Send-ToHPEventLog
   Write-Verbose "Sending message (category=$category, id=$id) to eventlog $logname with source $source"
   $params = @{
     EntryType = $severity.value__
-    Category = $category
-    Message = $message
-    LogName = $logname
-    source = $source
-    EventId = $id
+    Category  = $category
+    Message   = $message
+    LogName   = $logname
+    source    = $source
+    EventId   = $id
   }
 
 
   if ($target -ne ".") {
-    $params.Add("ComputerName",$target)
+    $params.Add("ComputerName", $target)
     Write-Verbose ("The target machine is remote ($target)")
   }
 
-  if ($rawdata -ne $null) { $params.Add("RawData",$rawdata) }
+  if ($rawdata -ne $null) { $params.Add("RawData", $rawdata) }
 
   try {
     Write-EventLog @params
@@ -520,8 +513,7 @@ function Send-ToHPEventLog
     if (-not $PassThru.IsPresent) {
       throw ("Could not send eventlog message: $($_.Exception.Message)")
     }
-    else
-    {
+    else {
       Write-Error -Message $_.Exception.Message -ErrorAction Continue
     }
   }
@@ -541,13 +533,13 @@ function Write-HPPrivateSimple {
   [CmdletBinding()]
   param
   (
-    [Parameter(Mandatory = $True,Position = 0)]
+    [Parameter(Mandatory = $True, Position = 0)]
     [LogSeverity]$Severity,
-    [Parameter(Mandatory = $True,Position = 1)]
+    [Parameter(Mandatory = $True, Position = 1)]
     [string]$Message,
-    [Parameter(Mandatory = $True,Position = 2)]
+    [Parameter(Mandatory = $True, Position = 2)]
     [string]$Component,
-    [Parameter(Mandatory = $False,Position = 3)]
+    [Parameter(Mandatory = $False, Position = 3)]
     [string]$File = $Null
   )
   $prefix = switch ($severity) {
@@ -557,8 +549,7 @@ function Write-HPPrivateSimple {
   }
 
   if ($File) {
-    if (-not [System.IO.Directory]::Exists([System.IO.Path]::GetDirectoryName($File)))
-    {
+    if (-not [System.IO.Directory]::Exists([System.IO.Path]::GetDirectoryName($File))) {
       throw [System.IO.DirectoryNotFoundException]"Path not found: $([System.IO.Path]::GetDirectoryName($File))"
     }
   }
@@ -584,29 +575,28 @@ function Write-HPPrivateCMTrace {
   [CmdletBinding()]
   param
   (
-    [Parameter(Mandatory = $True,Position = 0)]
+    [Parameter(Mandatory = $True, Position = 0)]
     [LogSeverity]$Severity,
-    [Parameter(Mandatory = $True,Position = 1)]
+    [Parameter(Mandatory = $True, Position = 1)]
     [string]$Message,
-    [Parameter(Mandatory = $True,Position = 2)]
+    [Parameter(Mandatory = $True, Position = 2)]
     [string]$Component,
-    [Parameter(Mandatory = $False,Position = 3)]
+    [Parameter(Mandatory = $False, Position = 3)]
     [string]$File
 
   )
 
   $line = "<![LOG[$Message]LOG]!>" + `
-     "<time=`"$(Get-Date -Format "HH:mm:ss.ffffff")`" " + `
-     "date=`"$(Get-Date -Format "M-d-yyyy")`" " + `
-     "component=`"$Component`" " + `
-     "context=`"$(Get-HPPrivateUserIdentity)`" " + `
-     "type=`"$([int]$Severity)`" " + `
-     "thread=`"$(Get-HPPrivateThreadID)`" " + `
-     "file=`"`">"
+    "<time=`"$(Get-Date -Format "HH:mm:ss.ffffff")`" " + `
+    "date=`"$(Get-Date -Format "M-d-yyyy")`" " + `
+    "component=`"$Component`" " + `
+    "context=`"$(Get-HPPrivateUserIdentity)`" " + `
+    "type=`"$([int]$Severity)`" " + `
+    "thread=`"$(Get-HPPrivateThreadID)`" " + `
+    "file=`"`">"
 
   if ($File) {
-    if (-not [System.IO.Directory]::Exists([System.IO.Path]::GetDirectoryName($File)))
-    {
+    if (-not [System.IO.Directory]::Exists([System.IO.Path]::GetDirectoryName($File))) {
       throw [System.IO.DirectoryNotFoundException]"Path not found: $([System.IO.Path]::GetDirectoryName($File))"
     }
   }
@@ -655,11 +645,10 @@ function Write-HPPrivateCMTrace {
   [Get-HPCMSLLogFormat](https://developers.hp.com/hp-client-management/doc/Get-HPCMSLLogFormat)
 
 #>
-function Set-HPCMSLLogFormat
-{
+function Set-HPCMSLLogFormat {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPCMSLLogFormat")]
   param(
-    [Parameter(Mandatory = $True,Position = 0)]
+    [Parameter(Mandatory = $True, Position = 0)]
     [LogType]$Format
   )
   $Env:HPCMSL_LOG_FORMAT = $Format
@@ -693,25 +682,21 @@ function Set-HPCMSLLogFormat
   [Set-HPCMSLLogFormat](https://developers.hp.com/hp-client-management/doc/Set-HPCMSLLogFormat)
 
 #>
-function Get-HPCMSLLogFormat
-{
+function Get-HPCMSLLogFormat {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPCMSLLogFormat")]
   param()
 
-  if (-not $Global::CmslLog)
-  {
+  if (-not $Global::CmslLog) {
     $Global:CmslLog = Get-HPPrivateLogVar
   }
 
-  if (-not $Global:CmslLog)
-  {
+  if (-not $Global:CmslLog) {
     $Global:CmslLog = 'Simple'
   }
 
   Write-Verbose "Configured log type is $($Global:CmslLog)"
 
-  switch ($Global:CmslLog)
-  {
+  switch ($Global:CmslLog) {
     'CMTrace' { 'CMTrace' }
     Default { 'Simple' }
   }
@@ -749,23 +734,21 @@ function Get-HPCMSLLogFormat
   [Set-HPCMSLLogFormat](https://developers.hp.com/hp-client-management/doc/Set-HPCMSLLogFormat)
 
 #>
-function Write-HPLogWarning
-{
+function Write-HPLogWarning {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Write-HPLogWarning")]
   [Alias('Write-LogWarning')]
   param(
-    [Parameter(Mandatory = $True,Position = 0)]
+    [Parameter(Mandatory = $True, Position = 0)]
     [string]$Message,
-    [Parameter(Mandatory = $False,Position = 1)]
+    [Parameter(Mandatory = $False, Position = 1)]
     [string]$Component = "General",
-    [Parameter(Mandatory = $False,Position = 2)]
+    [Parameter(Mandatory = $False, Position = 2)]
     [string]$File
   )
   if ($File) {
     $file = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($file)
   }
-  switch (Get-HPCMSLLogFormat)
-  {
+  switch (Get-HPCMSLLogFormat) {
     CMTrace {
       Write-HPPrivateCMTrace -Severity Warning -Message $Message -Component $Component -File $File
     }
@@ -808,24 +791,22 @@ function Write-HPLogWarning
   [Set-HPCMSLLogFormat](https://developers.hp.com/hp-client-management/doc/Set-HPCMSLLogFormat)
   
 #>
-function Write-HPLogError
-{
+function Write-HPLogError {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Write-HPLogError")]
   [Alias('Write-LogError')]
   param(
-    [Parameter(Mandatory = $True,Position = 0)]
+    [Parameter(Mandatory = $True, Position = 0)]
     [string]$Message,
-    [Parameter(Mandatory = $False,Position = 1)]
+    [Parameter(Mandatory = $False, Position = 1)]
     [string]$Component = "General",
-    [Parameter(Mandatory = $False,Position = 2)]
+    [Parameter(Mandatory = $False, Position = 2)]
     [string]$File
   )
 
   if ($File) {
     $file = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($file)
   }
-  switch (Get-HPCMSLLogFormat)
-  {
+  switch (Get-HPCMSLLogFormat) {
     CMTrace {
       Write-HPPrivateCMTrace -Severity Error -Message $Message -Component $Component -File $file
     }
@@ -856,24 +837,22 @@ function Write-HPLogError
 .EXAMPLE
   Write-HPLogInfo -Component "Repository" -Message "Nothing bad happened" -File myfile.log
 #>
-function Write-HPLogInfo
-{
+function Write-HPLogInfo {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Write-HPLogInfo")]
   [Alias('Write-LogInfo')]
   param(
-    [Parameter(Mandatory = $True,Position = 0)]
+    [Parameter(Mandatory = $True, Position = 0)]
     [string]$Message,
-    [Parameter(Mandatory = $False,Position = 1)]
+    [Parameter(Mandatory = $False, Position = 1)]
     [string]$Component = "General",
-    [Parameter(Mandatory = $False,Position = 2)]
+    [Parameter(Mandatory = $False, Position = 2)]
     [string]$File
   )
   if ($File) {
     $file = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($file)
   }
 
-  switch (Get-HPCMSLLogFormat)
-  {
+  switch (Get-HPCMSLLogFormat) {
     CMTrace {
       Write-HPPrivateCMTrace -Severity Information -Message $Message -Component $Component -File $file
     }

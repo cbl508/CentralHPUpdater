@@ -19,12 +19,11 @@ Set-StrictMode -Version 3.0
 if (Test-Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll") {
   Add-Type -Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll"
 }
-else{
+else {
   Add-Type -Path "$PSScriptRoot\..\..\HP.Private\1.8.5\HP.CMSLHelper.dll"
 }
 
-enum ErrorHandling
-{
+enum ErrorHandling {
   Fail = 0
   LogAndContinue = 1
 }
@@ -33,8 +32,7 @@ $REPOFILE = ".repository/repository.json"
 $LOGFILE = ".repository/activity.log"
 
 # print a bare error
-function err
-{
+function err {
   [CmdletBinding()]
   param(
     [string]$str,
@@ -49,32 +47,31 @@ function err
 }
 
 # convert a date object to an 8601 string
-function ISO8601DateString
-{
+function ISO8601DateString {
   [CmdletBinding()]
   param(
     [datetime]$Date
   )
-  $Date.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff",[System.Globalization.CultureInfo]::InvariantCulture)
+  $Date.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff", [System.Globalization.CultureInfo]::InvariantCulture)
 }
 
 # get current user name
-function GetUserName ()
-{
+function GetUserName () {
   [CmdletBinding()]
   param()
 
   try {
-    [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    if ($null -ne $id) { return $id.Name }
   }
   catch {
     return $env:username
   }
+  return $env:username
 }
 
 # check if a file exists
-function FileExists
-{
+function FileExists {
   [CmdletBinding()]
   param(
     [string]$File
@@ -83,8 +80,7 @@ function FileExists
 }
 
 # load a json object
-function LoadJson
-{
+function LoadJson {
   [CmdletBinding()]
   param(
     [string]$File
@@ -92,21 +88,19 @@ function LoadJson
 
   try {
     $PS7Mark = "PS7Mark"
-    $rawData = (Get-Content -Raw -Path $File) -replace '("DateLastModified": ")([^"]+)(")',('$1' + $PS7Mark + '$2' + $PS7Mark + '$3')
+    $rawData = (Get-Content -Raw -Path $File) -replace '("DateLastModified": ")([^"]+)(")', ('$1' + $PS7Mark + '$2' + $PS7Mark + '$3')
     [SoftpaqRepositoryFile]$result = $rawData | ConvertFrom-Json
-    $result.DateLastModified = $result.DateLastModified -replace $PS7Mark,""
+    $result.DateLastModified = $result.DateLastModified -replace $PS7Mark, ""
     return $result
   }
-  catch
-  {
+  catch {
     err ("Could not parse '$File'  $($_.Exception.Message)")
     return $Null
   }
 }
 
 # load a repository definition file
-function LoadRepository
-{
+function LoadRepository {
   [CmdletBinding()]
   param()
 
@@ -117,10 +111,9 @@ function LoadRepository
   }
 
   $repo = LoadJson -File $REPOFILE
-  if (-not $repo -eq $null)
-  {
+  if (-not $repo -eq $null) {
     err ("Could not initialize the repository: $($_.Exception.Message)")
-    return $false,$null
+    return $false, $null
   }
 
   if (-not $repo.Filters) { $repo.Filters = @() }
@@ -145,14 +138,11 @@ function LoadRepository
     $repo.settings.RepositoryReport = "CSV"
   }
 
-  foreach ($filter in $repo.Filters)
-  {
-    if (-not $filter.characteristic)
-    {
+  foreach ($filter in $repo.Filters) {
+    if (-not $filter.characteristic) {
       $filter.characteristic = "*"
     }
-    if (-not $filter.preferLTSC)
-    {
+    if (-not $filter.preferLTSC) {
       $filter.preferLTSC = $false
     }
   }
@@ -168,13 +158,12 @@ function LoadRepository
   }
 
   Write-Verbose "load success"
-  return $true,$repo
+  return $true, $repo
 }
 
 # This function downloads SoftPaq CVA, if SoftPaq exe already exists, checks signature of SoftPaq exe. If redownload required, SoftPaq exe will be downloaded. 
 # Note that CVAs are always downloaded since there is no reliable way to check their consistency.
-function DownloadSoftpaq
-{
+function DownloadSoftpaq {
   [CmdletBinding()]
   param(
     $DownloadSoftpaqCmd,
@@ -250,8 +239,7 @@ function DownloadSoftpaq
 }
 
 # write a repository definition file
-function WriteRepositoryFile
-{
+function WriteRepositoryFile {
   [CmdletBinding()]
   param($obj)
 
@@ -263,20 +251,18 @@ function WriteRepositoryFile
 }
 
 # check if a filter exists in a repo object
-function FilterExists
-{
+function FilterExists {
   [CmdletBinding()]
-  param($repo,$f)
+  param($repo, $f)
 
   $c = getFilters $repo $f
   return ($null -ne $c)
 }
 
 # get a list of filters in a repo, matching exact parameters
-function getFilters
-{
+function getFilters {
   [CmdletBinding()]
-  param($repo,$f)
+  param($repo, $f)
 
   if ($repo.Filters.Count -eq 0) { return $null }
   $repo.Filters | Where-Object {
@@ -290,10 +276,9 @@ function getFilters
 }
 
 # get a list of filters in a repo, considering empty parameters as wildcards
-function GetFiltersWild
-{
+function GetFiltersWild {
   [CmdletBinding()]
-  param($repo,$f)
+  param($repo, $f)
 
   if ($repo.Filters.Count -eq 0) { return $null }
   $repo.Filters | Where-Object {
@@ -312,13 +297,11 @@ function GetFiltersWild
 }
 
 # write a log entry to the .repository/activity.log
-function Log
-{
+function Log {
   [CmdletBinding()]
   param([string[]]$entryText)
 
-  foreach ($line in $entryText)
-  {
+  foreach ($line in $entryText) {
     if (-not $line) {
       $line = " "
     }
@@ -328,8 +311,7 @@ function Log
 }
 
 # touch a file (change its date if exists, or create it if it doesn't.
-function TouchFile
-{
+function TouchFile {
   [CmdletBinding()]
   param([string]$File)
 
@@ -339,8 +321,7 @@ function TouchFile
 
 
 # remove all marks from the repository
-function FlushMarks
-{
+function FlushMarks {
   [CmdletBinding()]
   param()
 
@@ -350,8 +331,7 @@ function FlushMarks
 
 
 # send a notification email
-function Send
-{
+function Send {
   [CmdletBinding()]
   param(
     $subject,
@@ -366,8 +346,7 @@ function Send
   }
 
   try {
-    if ((-not $n.addresses) -or (-not $n.addresses.Count))
-    {
+    if ((-not $n.addresses) -or (-not $n.addresses.Count)) {
       Write-Verbose ("Notifications have no recipients defined")
       return
     }
@@ -386,11 +365,10 @@ function Send
     Write-Verbose ("server: $($params.SmtpServer)")
     Write-Verbose ("port: $($params.Port)")
 
-    if ([string]::IsNullOrEmpty($n.UserName) -eq $false)
-    {
+    if ([string]::IsNullOrEmpty($n.UserName) -eq $false) {
       try {
         [SecureString]$read = $n.Password | ConvertTo-SecureString
-        $params.Credential = New-Object System.Management.Automation.PSCredential ($n.UserName,$read)
+        $params.Credential = New-Object System.Management.Automation.PSCredential ($n.UserName, $read)
         if (-not $params.Credential) {
           Log ("Could not build credential object from username and password")
           return;
@@ -469,8 +447,7 @@ function Send
 .LINK
   [Set-HPRepositoryConfiguration](https://developers.hp.com/hp-client-management/doc/Set-HPRepositoryConfiguration)
 #>
-function Initialize-HPRepository
-{
+function Initialize-HPRepository {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Initialize-HPRepository")]
   [Alias('Initialize-Repository')]
   param()
@@ -602,32 +579,31 @@ function Initialize-HPRepository
 .LINK
   [Get-HPDeviceProductID](https://developers.hp.com/hp-client-management/doc/Get-HPDeviceProductID)
 #>
-function Add-HPRepositoryFilter
-{
+function Add-HPRepositoryFilter {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Add-HPRepositoryFilter")]
   [Alias('Add-RepositoryFilter')]
   param(
     [ValidatePattern("^[a-fA-F0-9]{4}$")]
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [string]$Platform,
 
-    [ValidateSet("win7","win8","win8.1","win81","win10","win11","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("win7", "win8", "win8.1", "win81", "win10", "win11", "*")] # keep in sync with the SoftPaq module
     [Parameter(Position = 1)] $Os = "*", # counterintuitively, "*" for this Os parameter means "current"  
     [string[]]
 
-    [ValidateSet("1809","1903","1909","2004","2009","21H1","21H2","22H2", "23H2", "24H2", "25H2")] # keep in sync with the SoftPaq module
+    [ValidateSet("1809", "1903", "1909", "2004", "2009", "21H1", "21H2", "22H2", "23H2", "24H2", "25H2")] # keep in sync with the SoftPaq module
     [Parameter(Position = 1)]
     [string]$OsVer,
 
-    [ValidateSet("Bios","Firmware","Driver","Software","Os","Manageability","Diagnostic","Utility","Driverpack","Dock","UWPPack","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("Bios", "Firmware", "Driver", "Software", "Os", "Manageability", "Diagnostic", "Utility", "Driverpack", "Dock", "UWPPack", "*")] # keep in sync with the SoftPaq module
     [Parameter(Position = 2)]
     [string[]]$Category = "*",
 
-    [ValidateSet("Critical","Recommended","Routine","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("Critical", "Recommended", "Routine", "*")] # keep in sync with the SoftPaq module
     [Parameter(Position = 3)]
     [string[]]$ReleaseType = "*",
 
-    [ValidateSet("SSM","DPB","UWP","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("SSM", "DPB", "UWP", "*")] # keep in sync with the SoftPaq module
     [Parameter(Position = 4)]
     [string[]]$Characteristic = "*",
 
@@ -644,8 +620,7 @@ function Add-HPRepositoryFilter
     $newFilter.platform = $Platform
 
     $newFilter.OperatingSystem = $Os
-    if (-not $OsVer)
-    {
+    if (-not $OsVer) {
       $OsVer = GetHPCurrentOSVer
     }
     if ($OsVer) { $OsVer = $OsVer.ToLower() }
@@ -665,14 +640,12 @@ function Add-HPRepositoryFilter
       if ($OsVer -and $Os -ne '*') { Log "Added filter $Platform {{ os='$Os', osver='$OsVer', category='$Category', release='$ReleaseType', characteristic='$Characteristic', preferLTSC='$($PreferLTSC.IsPresent)' }}" }
       else { Log "Added filter $Platform {{ os='$Os', category='$Category', release='$ReleaseType', characteristic='$Characteristic', preferLTSC='$($PreferLTSC.IsPresent)' }}" }
     }
-    else
-    {
+    else {
       Write-Verbose "Silently ignoring this filter since exact match is already in the repository"
     }
     Write-Verbose "Repository filter added."
   }
-  catch
-  {
+  catch {
     err ("Could not add filter to the repository:  $($_.Exception.Message)")
   }
 }
@@ -780,38 +753,37 @@ function Add-HPRepositoryFilter
 .LINK
   [Test-HPRepositoryNotificationConfiguration](https://developers.hp.com/hp-client-management/doc/Test-HPRepositoryNotificationConfiguration)
 #>
-function Remove-HPRepositoryFilter
-{
+function Remove-HPRepositoryFilter {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Remove-HPRepositoryFilter")]
   [Alias('Remove-RepositoryFilter')]
   param(
     [ValidatePattern("^[a-fA-F0-9]{4}$")]
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [string]$Platform,
 
-    [ValidateSet("win7","win8","win8.1","win81","win10","win11","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("win7", "win8", "win8.1", "win81", "win10", "win11", "*")] # keep in sync with the SoftPaq module
     [string[]]
     [Parameter(Position = 1)]
     $Os = "*", # counterintuitively, "*" for this Os parameter means "current"
 
-    [ValidateSet("1809","1903","1909","2004","2009","21H1","21H2","22H2", "23H2", "24H2", "25H2")] # keep in sync with the SoftPaq module
+    [ValidateSet("1809", "1903", "1909", "2004", "2009", "21H1", "21H2", "22H2", "23H2", "24H2", "25H2")] # keep in sync with the SoftPaq module
     [Parameter(Position = 1)]
     [string]$OsVer,
 
-    [ValidateSet("Bios","Firmware","Driver","Software","Os","Manageability","Diagnostic","Utility","Driverpack","Dock","UWPPack","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("Bios", "Firmware", "Driver", "Software", "Os", "Manageability", "Diagnostic", "Utility", "Driverpack", "Dock", "UWPPack", "*")] # keep in sync with the SoftPaq module
     [string[]]
     [Parameter(Position = 2)]
     $Category = "*",
 
-    [ValidateSet("Critical","Recommended","Routine","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("Critical", "Recommended", "Routine", "*")] # keep in sync with the SoftPaq module
     [string[]]
     [Parameter(Position = 3)]
     $ReleaseType = "*",
 
-    [Parameter(Position = 4,Mandatory = $false)]
+    [Parameter(Position = 4, Mandatory = $false)]
     [switch]$Yes = $false,
 
-    [ValidateSet("SSM","DPB","UWP","*")] # keep in sync with the SoftPaq module
+    [ValidateSet("SSM", "DPB", "UWP", "*")] # keep in sync with the SoftPaq module
     [string[]]
     [Parameter(Position = 5)]
     $Characteristic = "*",
@@ -854,7 +826,8 @@ function Remove-HPRepositoryFilter
       $answer = Read-Host "Enter 'y' to continue: "
       if ($answer -ne "y") {
         Write-Host 'Aborted.'
-        return }
+        return 
+      }
     }
 
     $c[1].Filters = $c[1].Filters | Where-Object { $todelete -notcontains $_ }
@@ -864,8 +837,7 @@ function Remove-HPRepositoryFilter
       Log "Removed filter $($f.platform) { os='$($f.operatingSystem)', category='$($f.category)', release='$($f.releaseType), characteristic='$($f.characteristic)' }"
     }
   }
-  catch
-  {
+  catch {
     err ("Could not remove filter from repository: $($_.Exception.Message)")
   }
 }
@@ -916,8 +888,7 @@ function Remove-HPRepositoryFilter
 .LINK
   [Test-HPRepositoryNotificationConfiguration](https://developers.hp.com/hp-client-management/doc/Test-HPRepositoryNotificationConfiguration)
 #>
-function Get-HPRepositoryInfo ()
-{
+function Get-HPRepositoryInfo () {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPRepositoryInfo")]
   [Alias('Get-RepositoryInfo')]
   param()
@@ -927,8 +898,7 @@ function Get-HPRepositoryInfo ()
     if (-not $c[0]) { return }
     $c[1]
   }
-  catch
-  {
+  catch {
     err ("Could not get repository info: $($_.Exception.Message)")
   }
 }
@@ -993,21 +963,20 @@ function Get-HPRepositoryInfo ()
 .LINK
   [Test-HPRepositoryNotificationConfiguration](https://developers.hp.com/hp-client-management/doc/Test-HPRepositoryNotificationConfiguration)
 #>
-function Invoke-HPRepositorySync
-{
+function Invoke-HPRepositorySync {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Invoke-HPRepositorySync")]
   [Alias('Invoke-RepositorySync')]
   param(
-    [Parameter(Position = 0,Mandatory = $false)]
+    [Parameter(Position = 0, Mandatory = $false)]
     [switch]$Quiet = $false,
 
     [Alias('Url')]
-    [Parameter(Position = 1,Mandatory = $false)]
+    [Parameter(Position = 1, Mandatory = $false)]
     [string]$ReferenceUrl = "https://hpia.hpcloud.hp.com/ref"
   )
 
   # only allow https or file paths with or without file:// URL prefix
-  if ($ReferenceUrl -and -not ($ReferenceUrl.StartsWith("https://",$true,$null) -or [System.IO.Directory]::Exists($ReferenceUrl) -or $ReferenceUrl.StartsWith("file//:",$true,$null))) {
+  if ($ReferenceUrl -and -not ($ReferenceUrl.StartsWith("https://", $true, $null) -or [System.IO.Directory]::Exists($ReferenceUrl) -or $ReferenceUrl.StartsWith("file//:", $true, $null))) {
     throw [System.ArgumentException]"Only HTTPS or valid existing directory paths are supported."
   }
 
@@ -1045,8 +1014,7 @@ function Invoke-HPRepositorySync
     $platformGroups = $filters | Group-Object -Property platform
     $normalized = @()
 
-    foreach ($pobj in $platformGroups)
-    {
+    foreach ($pobj in $platformGroups) {
 
       $items = $pobj.Group
 
@@ -1066,7 +1034,7 @@ function Invoke-HPRepositorySync
         $items | ForEach-Object { $_.characteristic = "*" }
       }
 
-      $normalized += $items | sort -Unique -Property operatingSystem,category,releaseType,characteristic
+      $normalized += $items | Sort-Object -Unique -Property operatingSystem, category, releaseType, characteristic
     }
 
     $softpaqlist = @()
@@ -1078,60 +1046,50 @@ function Invoke-HPRepositorySync
     foreach ($c in $normalized) {
       Write-Verbose ($c | Format-List | Out-String)
 
-      if (Get-HPDeviceDetails -Platform $c.platform -Url $ReferenceUrl)
-      {
+      if (Get-HPDeviceDetails -Platform $c.platform -Url $ReferenceUrl) {
         $softpaqListCmd.platform = $c.platform.ToLower()
         $softpaqListCmd.Quiet = $Quiet
         $softpaqListCmd.verbose = $VerbosePreference
 
         Write-Verbose ("Working on a rule for platform $($softpaqListCmd.platform)")
 
-        if ($c.OperatingSystem.StartsWith("win10:"))
-        {
+        if ($c.OperatingSystem.StartsWith("win10:")) {
           $split = $c.OperatingSystem -split ':'
           $softpaqListCmd.OS = $split[0]
           $softpaqListCmd.osver = $split[1]
         }
-        elseif ($c.OperatingSystem -eq "win10")
-        {
+        elseif ($c.OperatingSystem -eq "win10") {
           $softpaqListCmd.OS = "win10"
           $softpaqListCmd.osver = GetHPCurrentOSVer
         }
-        elseif ($c.OperatingSystem.StartsWith("win11:"))
-        {
+        elseif ($c.OperatingSystem.StartsWith("win11:")) {
           $split = $c.OperatingSystem -split ':'
           $softpaqListCmd.OS = $split[0]
           $softpaqListCmd.osver = $split[1]
         }
-        elseif ($c.OperatingSystem -eq "win11")
-        {
+        elseif ($c.OperatingSystem -eq "win11") {
           $softpaqListCmd.OS = "win11"
           $softpaqListCmd.osver = GetHPCurrentOSVer
         }
-        elseif ($c.OperatingSystem -ne "*")
-        {
+        elseif ($c.OperatingSystem -ne "*") {
           $softpaqListCmd.OS = $c.OperatingSystem
           #$softpaqListCmd.osver = $null
         }
 
-        if ($c.characteristic -ne "*")
-        {
+        if ($c.characteristic -ne "*") {
           $softpaqListCmd.characteristic = $c.characteristic.ToUpper().Split()
           Write-Verbose "Filter-characteristic:$($softpaqListCmd.characteristic)"
         }
 
-        if ($c.ReleaseType -ne "*")
-        {
+        if ($c.ReleaseType -ne "*") {
           $softpaqListCmd.ReleaseType = $c.ReleaseType.Split()
           Write-Verbose "Filter-releaseType:$($softpaqListCmd.releaseType)"
         }
-        if ($c.Category -ne "*")
-        {
+        if ($c.Category -ne "*") {
           $softpaqListCmd.Category = $c.Category.Split()
           Write-Verbose "Filter-category:$($softpaqListCmd.category)"
         }
-        if ($c.preferLTSC -eq $true)
-        {
+        if ($c.preferLTSC -eq $true) {
           $softpaqListCmd.PreferLTSC = $true
           Write-Verbose "Filter-preferLTSC:$($softpaqListCmd.PreferLTSC)"
         }
@@ -1297,10 +1255,9 @@ function Invoke-HPRepositorySync
     $downloadCmd.Verbose = $VerbosePreference
 
     Log "Download has started for $($softpaqlist.Count) softpaqs."
-    foreach ($sp in $softpaqlist)
-    {
+    foreach ($sp in $softpaqlist) {
       $downloadCmd.Number = $sp.id.ToLower().TrimStart("sp")
-      $downloadCmd.Url = $sp.url -Replace "/$($sp.id).exe$",''
+      $downloadCmd.Url = $sp.url -Replace "/$($sp.id).exe$", ''
       Write-Verbose "Working on data for softpaq $($downloadCmd.number)"
       try {
         Log "Start downloading files for sp$($downloadCmd.number)."
@@ -1319,8 +1276,7 @@ function Invoke-HPRepositorySync
       catch {
         $exception = $_.Exception
 
-        switch ($repo[1].settings.OnRemoteFileNotFound)
-        {
+        switch ($repo[1].settings.OnRemoteFileNotFound) {
           "LogAndContinue" {
             [string]$data = formatSyncErrorMessageAsHtml $exception
             Log ($data -split "`n")
@@ -1351,7 +1307,7 @@ function Invoke-HPRepositorySync
         Write-Verbose "Repository Report created as Content.$Format."
       }
     }
-    catch [System.IO.FileNotFoundException]{
+    catch [System.IO.FileNotFoundException] {
       Write-Verbose "No data available to create Repository Report as directory '$(Get-Location)' does not contain any CVA files."
       Log "No data available to create Repository Report as directory '$(Get-Location)' does not contain any CVA files."
     }
@@ -1360,8 +1316,7 @@ function Invoke-HPRepositorySync
       Log "Error in creating Repository Report."
     }
   }
-  catch
-  {
+  catch {
     err "Repository synchronization failed: $($_.Exception.Message)" $true
     [string]$data = formatSyncErrorMessageAsHtml $_.Exception
     Log ($data -split "`n")
@@ -1369,8 +1324,7 @@ function Invoke-HPRepositorySync
   }
 }
 
-function formatSyncErrorMessageAsHtml ($exception)
-{
+function formatSyncErrorMessageAsHtml ($exception) {
   [string]$data = "An error occurred during softpaq synchronization.`n`n";
   $data += "The error was: <em>$($exception.Message)</em>`n"
   $data += "`nDetails:`n<pre>"
@@ -1429,8 +1383,7 @@ function formatSyncErrorMessageAsHtml ($exception)
   [Test-HPRepositoryNotificationConfiguration](https://developers.hp.com/hp-client-management/doc/Test-HPRepositoryNotificationConfiguration)
 
 #>
-function Invoke-HPRepositoryCleanup
-{
+function Invoke-HPRepositoryCleanup {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Invoke-HPRepositoryCleanup")]
   [Alias('Invoke-RepositoryCleanup')]
   param()
@@ -1442,8 +1395,7 @@ function Invoke-HPRepositoryCleanup
     Get-ChildItem "." -File | ForEach-Object {
       $name = $_.Name.ToLower().TrimStart("sp").Split('.')[0]
       if ($name -ne $null) {
-        if (-not (Test-Path ".repository/mark/$name.mark" -PathType Leaf))
-        {
+        if (-not (Test-Path ".repository/mark/$name.mark" -PathType Leaf)) {
           Write-Verbose "Deleting orphaned file $($_.Name)"
           Remove-Item $_.Name
           $deleted++
@@ -1536,52 +1488,50 @@ function Invoke-HPRepositoryCleanup
   [Test-HPRepositoryNotificationConfiguration](https://developers.hp.com/hp-client-management/doc/Test-HPRepositoryNotificationConfiguration)
 
 #>
-function Set-HPRepositoryNotificationConfiguration
-{
+function Set-HPRepositoryNotificationConfiguration {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPRepositoryNotificationConfiguration")]
   [Alias('Set-RepositoryNotificationConfiguration')]
   param(
-    [Parameter(Position = 0,Mandatory = $false)]
+    [Parameter(Position = 0, Mandatory = $false)]
     [string]
     [ValidatePattern("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")]
     $Server = $null,
 
-    [Parameter(Position = 1,Mandatory = $false)]
-    [ValidateRange(1,65535)]
+    [Parameter(Position = 1, Mandatory = $false)]
+    [ValidateRange(1, 65535)]
     [int]
     $Port = 0,
 
-    [Parameter(Position = 2,Mandatory = $false)]
+    [Parameter(Position = 2, Mandatory = $false)]
     [string]
-    [ValidateSet('true','false','auto')]
+    [ValidateSet('true', 'false', 'auto')]
     $Tls = $null,
 
-    [Parameter(Position = 3,Mandatory = $false)]
+    [Parameter(Position = 3, Mandatory = $false)]
     [string]
     $Username = $null,
 
-    [Parameter(Position = 4,Mandatory = $false)]
+    [Parameter(Position = 4, Mandatory = $false)]
     [string]
     $Password = $null,
 
-    [Parameter(Position = 5,Mandatory = $false)]
+    [Parameter(Position = 5, Mandatory = $false)]
     [string]
     [ValidatePattern("^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")]
     $From = $null,
 
-    [Parameter(Position = 6,Mandatory = $false)]
+    [Parameter(Position = 6, Mandatory = $false)]
     [string]
     $FromName = $null,
 
-    [Parameter(Position = 7,Mandatory = $false)]
+    [Parameter(Position = 7, Mandatory = $false)]
     [switch]
     $RemoveCredentials
   )
 
   Write-Verbose "Beginning notification configuration update"
 
-  if ($RemoveCredentials.IsPresent -and ([string]::IsNullOrEmpty($UserName) -eq $false -or [string]::IsNullOrEmpty($Password) -eq $false))
-  {
+  if ($RemoveCredentials.IsPresent -and ([string]::IsNullOrEmpty($UserName) -eq $false -or [string]::IsNullOrEmpty($Password) -eq $false)) {
     err ("-removeCredentials may not be specified with -username or -password")
     return
   }
@@ -1611,15 +1561,13 @@ function Set-HPRepositoryNotificationConfiguration
       $c[1].Notifications.Password = ConvertTo-SecureString $Password -Force -AsPlainText | ConvertFrom-SecureString
     }
 
-    if ($RemoveCredentials.IsPresent)
-    {
+    if ($RemoveCredentials.IsPresent) {
       Write-Verbose ("Clearing credentials from notification configuration")
       $c[1].Notifications.UserName = $null
       $c[1].Notifications.Password = $null
     }
 
-    switch ($Tls)
-    {
+    switch ($Tls) {
       "auto" {
         if ($Port -ne 25) { $c[1].Notifications.tls = $true }
         else { $c[1].Notifications.tls = $false }
@@ -1637,10 +1585,12 @@ function Set-HPRepositoryNotificationConfiguration
     }
     if (-not [string]::IsNullOrEmpty($From)) {
       Write-Verbose ("Setting Mail from address to: $From")
-      $c[1].Notifications.from = $From }
+      $c[1].Notifications.from = $From 
+    }
     if (-not [string]::IsNullOrEmpty($FromName)) {
       Write-Verbose ("Setting Mail from displayname to: $FromName")
-      $c[1].Notifications.fromname = $FromName }
+      $c[1].Notifications.fromname = $FromName 
+    }
 
     WriteRepositoryFile -obj $c[1]
     Log ("Updated notification configuration")
@@ -1699,8 +1649,7 @@ function Set-HPRepositoryNotificationConfiguration
   Clear-HPRepositoryNotificationConfiguration
 
 #>
-function Clear-HPRepositoryNotificationConfiguration ()
-{
+function Clear-HPRepositoryNotificationConfiguration () {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Clear-HPRepositoryNotificationConfiguration")]
   [Alias('Clear-RepositoryNotificationConfiguration')]
   param()
@@ -1765,15 +1714,13 @@ function Clear-HPRepositoryNotificationConfiguration ()
 
 
 #>
-function Get-HPRepositoryNotificationConfiguration ()
-{
+function Get-HPRepositoryNotificationConfiguration () {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPRepositoryNotificationConfiguration")]
   [Alias('Get-RepositoryNotificationConfiguration')]
   param()
 
   $c = LoadRepository
-  if ((-not $c[0]) -or (-not $c[1].Notifications))
-  {
+  if ((-not $c[0]) -or (-not $c[1].Notifications)) {
     return $null
   }
   return $c[1].Notifications
@@ -1826,16 +1773,14 @@ function Get-HPRepositoryNotificationConfiguration ()
 .EXAMPLE
   Show-HPRepositoryNotificationConfiguration
 #>
-function Show-HPRepositoryNotificationConfiguration ()
-{
+function Show-HPRepositoryNotificationConfiguration () {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Show-HPRepositoryNotificationConfiguration")]
   [Alias('Show-RepositoryNotificationConfiguration')]
   param()
 
   try {
     $c = Get-HPRepositoryNotificationConfiguration
-    if (-not $c)
-    {
+    if (-not $c) {
       err ("Notifications are not configured.")
       return
     }
@@ -1848,13 +1793,11 @@ function Show-HPRepositoryNotificationConfiguration ()
     }
     Write-Host "Email will arrive from $($c.from) with name `"$($c.fromname)`""
 
-    if ((-not $c.addresses) -or (-not $c.addresses.Count))
-    {
+    if ((-not $c.addresses) -or (-not $c.addresses.Count)) {
       Write-Host "There are no recipients configured"
       return
     }
-    foreach ($r in $c.addresses)
-    {
+    foreach ($r in $c.addresses) {
       Write-Host "Recipient: $r"
     }
   }
@@ -1916,12 +1859,11 @@ function Show-HPRepositoryNotificationConfiguration ()
   Add-HPRepositorySyncFailureRecipient -to someone@mycompany.com
 
 #>
-function Add-HPRepositorySyncFailureRecipient ()
-{
+function Add-HPRepositorySyncFailureRecipient () {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Add-HPRepositorySyncFailureRecipient")]
   [Alias('Add-RepositorySyncFailureRecipient')]
   param(
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [ValidatePattern("^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")]
     [string]
     $To
@@ -2004,12 +1946,11 @@ function Add-HPRepositorySyncFailureRecipient ()
   Remove-HPRepositorySyncFailureRecipient -to someone@mycompany.com
 
 #>
-function Remove-HPRepositorySyncFailureRecipient
-{
+function Remove-HPRepositorySyncFailureRecipient {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Remove-HPRepositorySyncFailureRecipient")]
   [Alias('Remove-RepositorySyncFailureRecipient')]
   param(
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [ValidatePattern("^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")]
     [string]
     $To
@@ -2083,8 +2024,7 @@ function Remove-HPRepositorySyncFailureRecipient
   Test-HPRepositoryNotificationConfiguration
 
 #>
-function Test-HPRepositoryNotificationConfiguration
-{
+function Test-HPRepositoryNotificationConfiguration {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Test-HPRepositoryNotificationConfiguration")]
   [Alias('Test-RepositoryNotificationConfiguration')]
   param()
@@ -2137,26 +2077,25 @@ function Test-HPRepositoryNotificationConfiguration
   - More information on using HPIA with CMSL can be found at this [blog post](https://developers.hp.com/hp-client-management/blog/driver-injection-hp-image-assistant-and-hp-cmsl-in-memcm).
   - To create a report outside the repository, use the New-HPRepositoryReport command.
 #>
-function Set-HPRepositoryConfiguration
-{
+function Set-HPRepositoryConfiguration {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPRepositoryConfiguration")]
   [Alias('Set-RepositoryConfiguration')]
   param(
-    [ValidateSet('OnRemoteFileNotFound','OfflineCacheMode','RepositoryReport')]
-    [Parameter(ParameterSetName = "ErrorHandler",Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = "CacheMode",Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = "ReportHandler",Position = 0,Mandatory = $true)]
+    [ValidateSet('OnRemoteFileNotFound', 'OfflineCacheMode', 'RepositoryReport')]
+    [Parameter(ParameterSetName = "ErrorHandler", Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = "CacheMode", Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = "ReportHandler", Position = 0, Mandatory = $true)]
     [string]$Setting,
 
-    [Parameter(ParameterSetName = "ErrorHandler",Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = "ErrorHandler", Position = 1, Mandatory = $true)]
     [ErrorHandling]$Value,
 
-    [ValidateSet('Enable','Disable')]
-    [Parameter(ParameterSetName = "CacheMode",Position = 1,Mandatory = $true)]
+    [ValidateSet('Enable', 'Disable')]
+    [Parameter(ParameterSetName = "CacheMode", Position = 1, Mandatory = $true)]
     [string]$CacheValue,
 
-    [ValidateSet('CSV','JSon','XML','ExcelCSV')]
-    [Parameter(ParameterSetName = "ReportHandler",Position = 1,Mandatory = $true)]
+    [ValidateSet('CSV', 'JSon', 'XML', 'ExcelCSV')]
+    [Parameter(ParameterSetName = "ReportHandler", Position = 1, Mandatory = $true)]
     [string]$Format
   )
   $c = LoadRepository
@@ -2227,14 +2166,13 @@ function Set-HPRepositoryConfiguration
 .LINK
   [Initialize-HPRepository](https://developers.hp.com/hp-client-management/doc/Initialize-HPRepository)
 #>
-function Get-HPRepositoryConfiguration
-{
+function Get-HPRepositoryConfiguration {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPRepositoryConfiguration")]
   [Alias('Get-RepositoryConfiguration')]
   param(
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [string]
-    [ValidateSet('OnRemoteFileNotFound','OfflineCacheMode','RepositoryReport')]
+    [ValidateSet('OnRemoteFileNotFound', 'OfflineCacheMode', 'RepositoryReport')]
     $Setting
   )
   $c = LoadRepository
@@ -2281,34 +2219,32 @@ function Get-HPRepositoryConfiguration
 .NOTES
   This command currently supports scenarios where the SoftPaq executable is stored under the format sp<softpaq-number>.exe.
 #>
-function New-HPRepositoryReport
-{
+function New-HPRepositoryReport {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/New-HPRepositoryReport")]
   [Alias('New-RepositoryReport')]
   param(
-    [Parameter(Position = 0,Mandatory = $false)]
-    [ValidateSet('CSV','JSon','XML','ExcelCSV')]
+    [Parameter(Position = 0, Mandatory = $false)]
+    [ValidateSet('CSV', 'JSon', 'XML', 'ExcelCSV')]
     [string]$Format,
 
-    [Parameter(Position = 1,Mandatory = $false)]
+    [Parameter(Position = 1, Mandatory = $false)]
     [System.IO.DirectoryInfo]$RepositoryPath = '.',
 
-    [Parameter(Position = 2,Mandatory = $false)]
+    [Parameter(Position = 2, Mandatory = $false)]
     [System.IO.FileInfo]$OutputFile
   )
   if ($OutputFile -and -not $format) { throw "OutputFile parameter requires a Format specifier" }
 
   $cvaList = @(Get-ChildItem -Path $RepositoryPath -Filter '*.cva')
 
-  if (-not $cvaList -or -not $cvaList.Length)
-  {
+  if (-not $cvaList -or -not $cvaList.Length) {
     throw [System.IO.FileNotFoundException]"Directory '$(Get-Location)' does not contain CVA files."
   }
 
-  if($cvaList.Length -eq 1){
+  if ($cvaList.Length -eq 1) {
     Write-Verbose "Processing $($cvaList.Length) CVA"
   }
-  else{
+  else {
     Write-Verbose "Processing $($cvaList.Length) CVAs"
   }
 
@@ -2319,22 +2255,21 @@ function New-HPRepositoryReport
     try {
       $exe = Get-ChildItem -Path ($cva.Softpaq.SoftpaqNumber.trim() + ".exe") -ErrorAction stop
     }
-    catch [System.Management.Automation.ItemNotFoundException]{
+    catch [System.Management.Automation.ItemNotFoundException] {
       $exe = $null
     }
 
     [pscustomobject]@{
-      Softpaq = $cva.Softpaq.SoftpaqNumber
-      Vendor = $cva.General.VendorName
-      Title = $cva. "Software Title".US
-      type = if ($Cva.General.Category.contains("-")) { $Cva.General.Category.substring(0,$Cva.General.Category.IndexOf('-')).trim() } else { $Cva.General.Category }
-      Version = "$($cva.General.Version) Rev.$($cva.General.Revision)"
+      Softpaq    = $cva.Softpaq.SoftpaqNumber
+      Vendor     = $cva.General.VendorName
+      Title      = $cva. "Software Title".US
+      type       = if ($Cva.General.Category.contains("-")) { $Cva.General.Category.substring(0, $Cva.General.Category.IndexOf('-')).trim() } else { $Cva.General.Category }
+      Version    = "$($cva.General.Version) Rev.$($cva.General.Revision)"
       Downloaded = if ($exe) { $exe.CreationTime } else { "" }
-      Size = if ($exe) { "$($exe.Length)" } else { "" }
+      Size       = if ($exe) { "$($exe.Length)" } else { "" }
     }
   }
-  switch ($format)
-  {
+  switch ($format) {
     "CSV" {
       $r = $results | ConvertTo-Csv -NoTypeInformation
     }
