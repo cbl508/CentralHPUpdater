@@ -418,100 +418,121 @@ function Get-RemoteSystemInfo {
     
     Write-Log "Probing ${Hostname}..."
     
-    # 1. Ping Check (Fast)
-    $ping = Test-Connection -ComputerName $Hostname -Count 1 -Quiet
-    if (-not $ping) {
-        Write-Log "${Hostname} is unreachable (Ping failed)."
-        return @{
-            Model = "Unknown"
-            Serial = "N/A"
-            PlatformID = "N/A"
-            Status = "Unreachable"
-            Color = "#E57373" # Red
-            LastUpdated = "Never"
-            OS = "N/A"
-            FreeDisk = "N/A"
-            Memory = "N/A"
-        }
-    }
-
-    # 2. WMI/CIM Connection
-    try {
-        $session = $null
-        $timeout = $Global:Config.Timeout
-        try {
-            $session = New-CimSession -ComputerName $Hostname -ErrorAction Stop -OperationTimeoutSec $timeout
-        } catch {
-            Write-Log "WinRM to ${Hostname} failed, trying DCOM..."
-            $opt = New-CimSessionOption -Protocol Dcom
-            $session = New-CimSession -ComputerName $Hostname -SessionOption $opt -ErrorAction Stop -OperationTimeoutSec $timeout
-        }
+    # Execute network and WMI calls in a background Runspace to avoid freezing the WPF Dispatcher
+    $ps = [PowerShell]::Create()
+    $null = $ps.AddScript({
+        param($targetHost, $timeout)
         
-        # HP Info
-        $model = Get-HPDeviceModel -CimSession $session
-        $serial = Get-HPDeviceSerialNumber -CimSession $session
-        $platformId = Get-HPDeviceProductID -CimSession $session
-        
-        # BIOS Info
-        $biosInfo = Get-CimInstance -ClassName Win32_BIOS -CimSession $session
-        $biosVersion = $biosInfo.SMBIOSBIOSVersion
-        $biosDate = $biosInfo.ReleaseDate
-        
-        # OS Info
-        $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -CimSession $session
-        $osName = $osInfo.Caption -replace "Microsoft Windows ", ""
-        
-        # Disk Info (C:)
-        $diskInfo = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'" -CimSession $session
-        $freeSpaceGB = [math]::Round($diskInfo.FreeSpace / 1GB, 1)
-        $totalSpaceGB = [math]::Round($diskInfo.Size / 1GB, 1)
-        $diskStr = "${freeSpaceGB} GB / ${totalSpaceGB} GB"
-        
-        # Memory Info
-        $memInfo = Get-CimInstance -ClassName Win32_ComputerSystem -CimSession $session
-        $memGB = [math]::Round($memInfo.TotalPhysicalMemory / 1GB, 1)
-        
-        $formattedDate = "Unknown"
-        if ($biosDate) {
-            if ($biosDate -match '^(\d{4})(\d{2})(\d{2})') {
-                $formattedDate = "$($Matches[1])-$($Matches[2])-$($Matches[3])"
+        # 1. Ping Check (Fast)
+        $ping = Test-Connection -ComputerName $targetHost -Count 1 -Quiet
+        if (-not $ping) {
+            return @{
+                Model = "Unknown"
+                Serial = "N/A"
+                PlatformID = "N/A"
+                Status = "Unreachable"
+                Color = "#E57373" # Red
+                LastUpdated = "Never"
+                OS = "N/A"
+                FreeDisk = "N/A"
+                Memory = "N/A"
             }
         }
-        
-        Remove-CimSession $session
-        Write-Log "Successfully scanned ${Hostname}."
-        
-        return @{
-            Model = $model
-            Serial = $serial
-            PlatformID = $platformId
-            Status = "Online"
-            Color = "#4CAF50" # Green
-            LastUpdated = $formattedDate
-            OS = $osName
-            FreeDisk = $diskStr
-            Memory = "${memGB} GB"
+
+        # 2. WMI/CIM Connection
+        try {
+            $session = $null
+            try {
+                $session = New-CimSession -ComputerName $targetHost -ErrorAction Stop -OperationTimeoutSec $timeout
+            } catch {
+                $opt = New-CimSessionOption -Protocol Dcom
+                $session = New-CimSession -ComputerName $targetHost -SessionOption $opt -ErrorAction Stop -OperationTimeoutSec $timeout
+            }
+            
+            # Module commands (from HP.ClientManagement) might not be available in clean runspace
+            # But relying on CIM directly is safer in a background runspace.
+            # Using WMI fallback to get HP info if module isn't loaded in runspace
+            $model = "Unknown"
+            $serial = "N/A"
+            $platformId = "N/A"
+            
+            try {
+                $cs = Get-CimInstance -ClassName Win32_ComputerSystem -CimSession $session -ErrorAction Stop
+                $model = $cs.Model
+                $bios = Get-CimInstance -ClassName Win32_BIOS -CimSession $session -ErrorAction Stop
+                $serial = $bios.SerialNumber
+                
+                # HP Specific BaseBoard for Platform ID
+                $bb = Get-CimInstance -ClassName Win32_BaseBoard -CimSession $session -ErrorAction Stop
+                $platformId = $bb.Product
+            } catch {}
+            
+            # BIOS Info
+            $biosInfo = Get-CimInstance -ClassName Win32_BIOS -CimSession $session
+            $biosVersion = $biosInfo.SMBIOSBIOSVersion
+            $biosDate = $biosInfo.ReleaseDate
+            
+            # OS Info
+            $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -CimSession $session
+            $osName = $osInfo.Caption -replace "Microsoft Windows ", ""
+            
+            # Disk Info (C:)
+            $diskInfo = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'" -CimSession $session
+            $freeSpaceGB = [math]::Round($diskInfo.FreeSpace / 1GB, 1)
+            $totalSpaceGB = [math]::Round($diskInfo.Size / 1GB, 1)
+            $diskStr = "${freeSpaceGB} GB / ${totalSpaceGB} GB"
+            
+            # Memory Info
+            $memInfo = Get-CimInstance -ClassName Win32_ComputerSystem -CimSession $session
+            $memGB = [math]::Round($memInfo.TotalPhysicalMemory / 1GB, 1)
+            
+            $formattedDate = "Unknown"
+            if ($biosDate) {
+                if ($biosDate -match '^(\d{4})(\d{2})(\d{2})') {
+                    $formattedDate = "$($Matches[1])-$($Matches[2])-$($Matches[3])"
+                }
+            }
+            
+            Remove-CimSession $session
+            
+            return @{
+                Model = $model
+                Serial = $serial
+                PlatformID = $platformId
+                Status = "Online"
+                Color = "#4CAF50" # Green
+                LastUpdated = $formattedDate
+                OS = $osName
+                FreeDisk = $diskStr
+                Memory = "${memGB} GB"
+            }
         }
-    }
-    catch {
-        Write-Log "Failed to connect to ${Hostname}: $($_.Exception.Message)"
-        $status = "WMI Error"
-        if ($_.Exception.Message -match "Access is denied") {
-            $status = "Access Denied"
+        catch {
+            $status = "WMI Error"
+            if ($_.Exception.Message -match "Access is denied") {
+                $status = "Access Denied"
+            }
+            return @{
+                Model = "Unknown"
+                Serial = "N/A"
+                PlatformID = "N/A"
+                Status = $status
+                Color = "#FFB74D" # Orange/Warning
+                LastUpdated = "Never"
+                OS = "N/A"
+                FreeDisk = "N/A"
+                Memory = "N/A"
+                Error = $_.Exception.Message
+            }
         }
-        return @{
-            Model = "Unknown"
-            Serial = "N/A"
-            PlatformID = "N/A"
-            Status = $status
-            Color = "#FFB74D" # Orange/Warning
-            LastUpdated = "Never"
-            OS = "N/A"
-            FreeDisk = "N/A"
-            Memory = "N/A"
-        }
-    }
+    }).AddArgument($Hostname).AddArgument($Global:Config.Timeout)
+    
+    # We must wait for this specific call so it acts synchronously from the caller's perspective, 
+    # but the calling code needs to be updated to be async if it's on the UI thread.
+    # Therefore, we will return the IAsyncResult object and let the UI thread handle polling.
+    return $ps
 }
+# Helper function removed, logic moved to runspace
 
 function Get-AvailableUpdates {
     param($PlatformID)
@@ -700,14 +721,35 @@ if ($ctxPing) {
         $selected = $dgComputers.SelectedItem
         if ($selected) {
             Show-Loading "Pinging $($selected.Hostname)..."
-            $window.Dispatcher.InvokeAsync({
-                if (Test-Connection -ComputerName $selected.Hostname -Count 2 -Quiet) {
-                    [System.Windows.MessageBox]::Show("$($selected.Hostname) is ONLINE.", "Ping Result")
-                } else {
-                    [System.Windows.MessageBox]::Show("$($selected.Hostname) is UNREACHABLE.", "Ping Result")
+            
+            $psTask = [PowerShell]::Create().AddScript({
+                param($targetHost)
+                return Test-Connection -ComputerName $targetHost -Count 2 -Quiet
+            }).AddArgument($selected.Hostname)
+            
+            $asyncResult = $psTask.BeginInvoke()
+            
+            $timer = New-Object System.Windows.Threading.DispatcherTimer
+            $timer.Interval = [TimeSpan]::FromMilliseconds(200)
+            $timer.add_Tick({
+                if ($asyncResult.IsCompleted) {
+                    $timer.Stop()
+                    Hide-Loading
+                    try {
+                        $pingResult = $psTask.EndInvoke($asyncResult)[0]
+                        $psTask.Dispose()
+                        
+                        if ($pingResult) {
+                            [System.Windows.MessageBox]::Show("$($selected.Hostname) is ONLINE.", "Ping Result")
+                        } else {
+                            [System.Windows.MessageBox]::Show("$($selected.Hostname) is UNREACHABLE.", "Ping Result")
+                        }
+                    } catch {
+                        [System.Windows.MessageBox]::Show("Error checking ping.", "Error")
+                    }
                 }
-                Hide-Loading
             })
+            $timer.Start()
         }
     })
 }
@@ -727,12 +769,38 @@ if ($ctxRestart) {
         if ($selected) {
              $result = [System.Windows.MessageBox]::Show("Are you sure you want to RESTART $($selected.Hostname)?", "Confirm Restart", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
             if ($result -eq "Yes") {
-                try {
-                    Restart-Computer -ComputerName $selected.Hostname -Force -ErrorAction Stop
-                    [System.Windows.MessageBox]::Show("Restart command sent.", "Success")
-                } catch {
-                    [System.Windows.MessageBox]::Show("Failed to restart: $($_.Exception.Message)", "Error")
-                }
+                Show-Loading "Restarting $($selected.Hostname)..."
+                
+                $psTask = [PowerShell]::Create().AddScript({
+                    param($targetHost)
+                    try {
+                        Restart-Computer -ComputerName $targetHost -Force -ErrorAction Stop
+                        return @{ Success=$true; Message="Restart command sent." }
+                    } catch {
+                        return @{ Success=$false; Message=$_.Exception.Message }
+                    }
+                }).AddArgument($selected.Hostname)
+                
+                $asyncResult = $psTask.BeginInvoke()
+                
+                $timer = New-Object System.Windows.Threading.DispatcherTimer
+                $timer.Interval = [TimeSpan]::FromMilliseconds(200)
+                $timer.add_Tick({
+                    if ($asyncResult.IsCompleted) {
+                        $timer.Stop()
+                        Hide-Loading
+                        try {
+                            $res = $psTask.EndInvoke($asyncResult)[0]
+                            $psTask.Dispose()
+                            if ($res.Success) {
+                                [System.Windows.MessageBox]::Show($res.Message, "Success")
+                            } else {
+                                [System.Windows.MessageBox]::Show("Failed to restart: $($res.Message)", "Error")
+                            }
+                        } catch {}
+                    }
+                })
+                $timer.Start()
             }
         }
     })
@@ -755,30 +823,54 @@ if ($btnAddComputer) {
         $hostname = [Microsoft.VisualBasic.Interaction]::InputBox("Enter Hostname or IP Address", "Add Computer", "localhost")
         if ($hostname) {
             Show-Loading "Probing ${hostname}..."
-            $window.Dispatcher.Invoke({
-                try {
-                    $info = Get-RemoteSystemInfo -Hostname $hostname
-                    $c = New-Object HPComputer
-                    $c.Hostname = $hostname
-                    $c.Model = $info.Model
-                    $c.SerialNumber = $info.Serial
-                    $c.PlatformID = $info.PlatformID
-                    $c.Status = $info.Status
-                    $c.StatusColor = $info.Color
-                    $c.LastUpdated = $info.LastUpdated
-                    $c.OS = $info.OS
-                    $c.FreeDisk = $info.FreeDisk
-                    $c.Memory = $info.Memory
-                    $computers.Add($c)
-                    Save-Inventory
-                    Update-DashboardStats
-                } catch {
-                    Write-Log "Error adding computer: $($_.Exception.Message)"
-                    [System.Windows.MessageBox]::Show("Error adding computer: $($_.Exception.Message)", "Error")
-                } finally {
+            
+            # Start Async Probe
+            $psTask = Get-RemoteSystemInfo -Hostname $hostname
+            $asyncResult = $psTask.BeginInvoke()
+            
+            # Polling Timer for UI thread
+            $timer = New-Object System.Windows.Threading.DispatcherTimer
+            $timer.Interval = [TimeSpan]::FromMilliseconds(200)
+            $timer.add_Tick({
+                if ($asyncResult.IsCompleted) {
+                    $timer.Stop()
                     Hide-Loading
+                    try {
+                        $info = $psTask.EndInvoke($asyncResult)[0]
+                        $psTask.Dispose()
+                        
+                        if ($info.Error) { Write-Log "Error probing: $($info.Error)" }
+                        
+                        # Only add to UI when complete
+                        $c = New-Object HPComputer
+                        $c.Hostname = $hostname
+                        $c.Model = $info.Model
+                        $c.SerialNumber = $info.Serial
+                        $c.PlatformID = $info.PlatformID
+                        $c.Status = $info.Status
+                        $c.StatusColor = $info.Color
+                        $c.LastUpdated = $info.LastUpdated
+                        $c.OS = $info.OS
+                        $c.FreeDisk = $info.FreeDisk
+                        $c.Memory = $info.Memory
+                        
+                        $computers.Add($c)
+                        Save-Inventory
+                        Update-DashboardStats
+                        
+                        if ($info.Status -eq "Unreachable") {
+                            Write-Log "${hostname} is unreachable (Ping failed)."
+                        } elseif ($info.Status -eq "WMI Error" -or $info.Status -eq "Access Denied") {
+                            Write-Log "Failed to connect to WMI on ${hostname}."
+                        } else {
+                            Write-Log "Successfully scanned ${hostname}."
+                        }
+                    } catch {
+                        Write-Log "Error processing probe result: $($_.Exception.Message)"
+                    }
                 }
-            }, [System.Windows.Threading.DispatcherPriority]::Background)
+            })
+            $timer.Start()
         }
     })
 }
@@ -842,28 +934,121 @@ if ($btnExport) {
 
 if ($btnRefreshAll) {
     $btnRefreshAll.add_Click({
-        Show-Loading "Refreshing all systems..."
-        $window.Dispatcher.Invoke({
-            foreach ($c in $computers) {
-                $info = Get-RemoteSystemInfo -Hostname $c.Hostname
-                $c.Model = $info.Model
-                $c.SerialNumber = $info.Serial
-                $c.PlatformID = $info.PlatformID
-                $c.Status = $info.Status
-                $c.StatusColor = $info.Color
-                $c.LastUpdated = $info.LastUpdated
-                $c.OS = $info.OS
-                $c.FreeDisk = $info.FreeDisk
-                $c.Memory = $info.Memory
+        if ($computers.Count -eq 0) { return }
+        
+        Show-Loading "Refreshing $($computers.Count) systems..."
+        
+        # Create runspaces for parallelism
+        $pool = [runspacefactory]::CreateRunspacePool(1, 10)
+        $pool.Open()
+        
+        $jobs = @()
+        foreach ($c in $computers) {
+            $c.Status = "Refreshing..."
+            $c.StatusColor = "#757575"
+            
+            $ps = [PowerShell]::Create().AddScript({
+                param($targetHost, $timeout)
+                # Inline ping/WMI script for parallel jobs
+                if (-not (Test-Connection -ComputerName $targetHost -Count 1 -Quiet)) {
+                    return @{ Hostname=$targetHost; Model="Unknown"; Serial="N/A"; PlatformID="N/A"; Status="Unreachable"; Color="#E57373"; LastUpdated="Never"; OS="N/A"; FreeDisk="N/A"; Memory="N/A" }
+                }
+                
+                try {
+                    $session = $null
+                    try { $session = New-CimSession -ComputerName $targetHost -ErrorAction Stop -OperationTimeoutSec $timeout }
+                    catch { $session = New-CimSession -ComputerName $targetHost -SessionOption (New-CimSessionOption -Protocol Dcom) -ErrorAction Stop -OperationTimeoutSec $timeout }
+                    
+                    $sys = Get-CimInstance -ClassName Win32_ComputerSystem -CimSession $session -ErrorAction Stop
+                    $bios = Get-CimInstance -ClassName Win32_BIOS -CimSession $session -ErrorAction Stop
+                    $bb = Get-CimInstance -ClassName Win32_BaseBoard -CimSession $session -ErrorAction Stop
+                    $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -CimSession $session
+                    $diskInfo = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'" -CimSession $session
+                    
+                    $biosDate = $bios.ReleaseDate
+                    $formattedDate = "Unknown"
+                    if ($biosDate -match '^(\d{4})(\d{2})(\d{2})') { $formattedDate = "$($Matches[1])-$($Matches[2])-$($Matches[3])" }
+                    
+                    $freeGB = [math]::Round($diskInfo.FreeSpace / 1GB, 1)
+                    $totGB = [math]::Round($diskInfo.Size / 1GB, 1)
+                    $memGB = [math]::Round($sys.TotalPhysicalMemory / 1GB, 1)
+                    
+                    Remove-CimSession $session
+                    
+                    return @{ Hostname=$targetHost; Model=$sys.Model; Serial=$bios.SerialNumber; PlatformID=$bb.Product; Status="Online"; Color="#4CAF50"; LastUpdated=$formattedDate; OS=($osInfo.Caption -replace "Microsoft Windows ", ""); FreeDisk="${freeGB} GB / ${totGB} GB"; Memory="${memGB} GB" }
+                } catch {
+                    $errStatus = if ($_.Exception.Message -match "Access is denied") { "Access Denied" } else { "WMI Error" }
+                    return @{ Hostname=$targetHost; Model="Unknown"; Serial="N/A"; PlatformID="N/A"; Status=$errStatus; Color="#FFB74D"; LastUpdated="Never"; OS="N/A"; FreeDisk="N/A"; Memory="N/A" }
+                }
+            }).AddArgument($c.Hostname).AddArgument($Global:Config.Timeout)
+            $ps.RunspacePool = $pool
+            
+            $jobs += [PSCustomObject]@{
+                PS = $ps
+                Handle = $ps.BeginInvoke()
+                Target = $c.Hostname
             }
-            if ($dgComputers) { $dgComputers.Items.Refresh() }
-            if ($txtLastRefresh) { $txtLastRefresh.Text = Get-Date -Format "HH:mm:ss" }
-            Save-Inventory
-            Update-DashboardStats
-            Hide-Loading
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        }
+        
+        if ($dgComputers) { $dgComputers.Items.Refresh() }
+        
+        # Poll jobs
+        $timer = New-Object System.Windows.Threading.DispatcherTimer
+        $timer.Interval = [TimeSpan]::FromMilliseconds(500)
+        $timer.add_Tick({
+            $allDone = $true
+            foreach ($job in $jobs) {
+                if (-not $job.Handle.IsCompleted) {
+                    $allDone = $false
+                } else {
+                    if (-not $job.Processed) {
+                        try {
+                            $res = $job.PS.EndInvoke($job.Handle)[0]
+                            $job.PS.Dispose()
+                            
+                            $comp = $computers | Where-Object { $_.Hostname -eq $res.Hostname } | Select-Object -First 1
+                            if ($comp) {
+                                $comp.Model = $res.Model
+                                $comp.SerialNumber = $res.Serial
+                                $comp.PlatformID = $res.PlatformID
+                                $comp.Status = $res.Status
+                                $comp.StatusColor = $res.Color
+                                $comp.LastUpdated = $res.LastUpdated
+                                $comp.OS = $res.OS
+                                $comp.FreeDisk = $res.FreeDisk
+                                $comp.Memory = $res.Memory
+                            }
+                        } catch {}
+                        $job | Add-Member -MemberType NoteProperty -Name "Processed" -Value $true
+                        if ($dgComputers) { $dgComputers.Items.Refresh() }
+                    }
+                }
+            }
+            
+            if ($allDone) {
+                $timer.Stop()
+                $pool.Close()
+                $pool.Dispose()
+                if ($txtLastRefresh) { $txtLastRefresh.Text = Get-Date -Format "HH:mm:ss" }
+                Save-Inventory
+                Update-DashboardStats
+                Write-Log "Refreshed all systems."
+                Hide-Loading
+            }
+        })
+        $timer.Start()
     })
 }
+
+# --- GLOBAL TIMERS ---
+$Global:AutoRefreshTimer = New-Object System.Windows.Threading.DispatcherTimer
+$Global:AutoRefreshTimer.Interval = [TimeSpan]::FromMinutes(15)
+$Global:AutoRefreshTimer.add_Tick({
+    if ($Global:Config.AutoRefresh -and $computers.Count -gt 0) {
+        Write-Log "Auto-Refresh triggered."
+        $btnRefreshAll.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+    }
+})
 
 if ($btnSaveSettings) {
     $btnSaveSettings.add_Click({
@@ -872,6 +1057,13 @@ if ($btnSaveSettings) {
         $Global:Config.RepoPath = $txtRepoPath.Text
         $Global:Config.AutoRefresh = $chkAutoRefresh.IsChecked
         Save-Config
+        
+        if ($Global:Config.AutoRefresh) {
+            if (-not $Global:AutoRefreshTimer.IsEnabled) { $Global:AutoRefreshTimer.Start(); Write-Log "Auto-refresh enabled." }
+        } else {
+            if ($Global:AutoRefreshTimer.IsEnabled) { $Global:AutoRefreshTimer.Stop(); Write-Log "Auto-refresh disabled." }
+        }
+        
         [System.Windows.MessageBox]::Show("Settings saved!", "Success")
     })
 }
@@ -880,5 +1072,6 @@ if ($btnSaveSettings) {
 Initialize-Modules
 Load-Config
 Load-Inventory
+if ($Global:Config.AutoRefresh) { $Global:AutoRefreshTimer.Start() }
 Show-View "Dashboard"
 if ($window) { $window.ShowDialog() | Out-Null }
