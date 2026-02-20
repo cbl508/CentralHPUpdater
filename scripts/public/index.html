@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HP SecurePaq Central Update Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="glass-sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-shield-halved"></i>
+                <div>
+                    <h1>SecurePaq</h1>
+                    <span class="logo-subtext">Central Manager</span>
+                </div>
+            </div>
+            
+            <ul class="nav-links">
+                <li><button class="nav-btn active" data-tab="repository"><i class="fa-solid fa-server"></i> Repository</button></li>
+                <li><button class="nav-btn" data-tab="filters"><i class="fa-solid fa-filter"></i> Filters</button></li>
+                <li><button class="nav-btn" data-tab="settings"><i class="fa-solid fa-gear"></i> Settings</button></li>
+                <li><button class="nav-btn" data-tab="deploy"><i class="fa-solid fa-rocket"></i> Deploy</button></li>
+                <li><button class="nav-btn" data-tab="logs"><i class="fa-solid fa-terminal"></i> Logs</button></li>
+            </ul>
+
+            <div class="repo-status">
+                <p class="status-label">Current Repository</p>
+                <div class="path-input-group">
+                    <input type="text" id="repo-path" placeholder="C:\Repository" />
+                    <button id="btn-set-path" class="btn btn-icon" title="Set Path"><i class="fa-solid fa-check"></i></button>
+                    <button id="btn-open-path" class="btn btn-icon" title="Open Folder (Not available in web)"><i class="fa-solid fa-folder-open"></i></button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="content-area glass-panel">
+            
+            <!-- Repository Tab -->
+            <section id="tab-repository" class="tab-pane active fade-in">
+                <div class="tab-header">
+                    <h2><i class="fa-solid fa-server"></i> Management Dashboard</h2>
+                    <p>Initialize, synchronize, and clean up your HP repository.</p>
+                </div>
+
+                <div class="actions-grid">
+                    <button class="btn btn-primary action-btn hover-grow" id="btn-init">
+                        <div class="btn-icon-large"><i class="fa-solid fa-box-open"></i></div>
+                        <span>Initialize Repo</span>
+                    </button>
+                    <button class="btn btn-primary action-btn hover-grow" id="btn-sync">
+                        <div class="btn-icon-large"><i class="fa-solid fa-rotate"></i></div>
+                        <span>Run Sync</span>
+                    </button>
+                    <button class="btn btn-primary action-btn hover-grow" id="btn-cleanup">
+                        <div class="btn-icon-large"><i class="fa-solid fa-broom"></i></div>
+                        <span>Run Cleanup</span>
+                    </button>
+                    <button class="btn btn-secondary action-btn hover-grow" id="btn-info">
+                        <div class="btn-icon-large"><i class="fa-solid fa-circle-info"></i></div>
+                        <span>Refresh Info</span>
+                    </button>
+                </div>
+                
+                <div class="input-card glass-card">
+                    <label for="ref-url">Reference URL</label>
+                    <input type="url" id="ref-url" value="https://hpia.hpcloud.hp.com/ref" />
+                </div>
+                
+                <div class="info-card glass-card">
+                    <h3>Repository Information</h3>
+                    <pre id="repo-info-text">Click "Refresh Info" to load repository details...</pre>
+                </div>
+            </section>
+
+            <!-- Filters Tab -->
+            <section id="tab-filters" class="tab-pane fade-in">
+                <div class="tab-header">
+                    <h2><i class="fa-solid fa-filter"></i> Repository Filters</h2>
+                    <p>Add filters to control what gets downloaded into the repository.</p>
+                </div>
+
+                <form id="filter-form" class="form-container glass-card">
+                    <div class="form-row two-cols">
+                        <div class="input-group">
+                            <label for="f-platform">Platform ID</label>
+                            <input type="text" id="f-platform" placeholder="e.g. 8A33" maxlength="4" required />
+                            <small>Exactly 4 hexadecimal characters.</small>
+                        </div>
+                        <div class="input-group">
+                            <label for="f-os">Operating System</label>
+                            <div class="select-wrapper">
+                                <select id="f-os">
+                                    <option value="*">All (Current)</option>
+                                    <option value="win10">Windows 10</option>
+                                    <option value="win11">Windows 11</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row two-cols">
+                        <div class="input-group">
+                            <label for="f-osver">OS Version</label>
+                            <div class="select-wrapper">
+                                <select id="f-osver">
+                                    <option value="">Any</option>
+                                    <option value="1809">1809</option>
+                                    <option value="1903">1903</option>
+                                    <option value="1909">1909</option>
+                                    <option value="2004">2004</option>
+                                    <option value="2009">2009</option>
+                                    <option value="21H1">21H1</option>
+                                    <option value="21H2">21H2</option>
+                                    <option value="22H2">22H2</option>
+                                    <option value="23H2">23H2</option>
+                                    <option value="24H2">24H2</option>
+                                    <option value="25H2">25H2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group checkbox-wrapper">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="f-ltsc" />
+                                <span class="checkmark"></span>
+                                Prefer LTSC
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row multi-selects grid-3">
+                        <div class="multi-select-group">
+                            <label>Category</label>
+                            <div class="checkbox-list" id="f-category">
+                                <label class="custom-checkbox"><input type="checkbox" value="Bios"><span class="checkmark"></span> Bios</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Firmware"><span class="checkmark"></span> Firmware</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Driver"><span class="checkmark"></span> Driver</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Software"><span class="checkmark"></span> Software</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Os"><span class="checkmark"></span> Os</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Manageability"><span class="checkmark"></span> Manageability</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Diagnostic"><span class="checkmark"></span> Diagnostic</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Utility"><span class="checkmark"></span> Utility</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Driverpack"><span class="checkmark"></span> Driverpack</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Dock"><span class="checkmark"></span> Dock</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="UWPPack"><span class="checkmark"></span> UWPPack</label>
+                            </div>
+                        </div>
+
+                        <div class="multi-select-group">
+                            <label>Release Type</label>
+                            <div class="checkbox-list" id="f-release">
+                                <label class="custom-checkbox"><input type="checkbox" value="Critical"><span class="checkmark"></span> Critical</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Recommended"><span class="checkmark"></span> Recommended</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Routine"><span class="checkmark"></span> Routine</label>
+                            </div>
+                        </div>
+
+                        <div class="multi-select-group">
+                            <label>Characteristic</label>
+                            <div class="checkbox-list" id="f-char">
+                                <label class="custom-checkbox"><input type="checkbox" value="SSM"><span class="checkmark"></span> SSM</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="DPB"><span class="checkmark"></span> DPB</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="UWP"><span class="checkmark"></span> UWP</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions right">
+                        <button type="submit" class="btn btn-primary btn-glow"><i class="fa-solid fa-plus"></i> Add Filter</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="tab-settings" class="tab-pane fade-in">
+                <div class="tab-header">
+                    <h2><i class="fa-solid fa-gear"></i> Configuration Settings</h2>
+                    <p>Adjust the repository behaviors.</p>
+                </div>
+
+                <form id="settings-form" class="form-container glass-card">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="s-missing">On Remote File Not Found</label>
+                            <div class="select-wrapper">
+                                <select id="s-missing">
+                                    <option value="Fail">Fail</option>
+                                    <option value="LogAndContinue">LogAndContinue</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="s-cache">Offline Cache Mode</label>
+                            <div class="select-wrapper">
+                                <select id="s-cache">
+                                    <option value="Disable">Disable</option>
+                                    <option value="Enable">Enable</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="s-report">Repository Report Format</label>
+                            <div class="select-wrapper">
+                                <select id="s-report">
+                                    <option value="CSV">CSV</option>
+                                    <option value="JSon">JSon</option>
+                                    <option value="XML">XML</option>
+                                    <option value="ExcelCSV">ExcelCSV</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions right">
+                        <button type="submit" class="btn btn-primary btn-glow"><i class="fa-solid fa-floppy-disk"></i> Apply Settings</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Deploy Tab -->
+            <section id="tab-deploy" class="tab-pane fade-in">
+                <div class="tab-header">
+                    <h2><i class="fa-solid fa-rocket"></i> Remote Deployment</h2>
+                    <p>Push SoftPaqs to LAN endpoints using PowerShell Remoting.</p>
+                </div>
+
+                <form id="deploy-form" class="form-container glass-card">
+                    <div class="form-row full-width">
+                        <div class="input-group">
+                            <label for="d-targets">Target PC Hostnames / IPs</label>
+                            <textarea id="d-targets" rows="2" placeholder="e.g. PC-01, PC-02, 192.168.1.50" required></textarea>
+                            <small>Comma separated list of target network names.</small>
+                        </div>
+                    </div>
+                    <div class="form-row full-width">
+                        <div class="input-group">
+                            <label for="d-packages">Packages to Deploy</label>
+                            <textarea id="d-packages" rows="2" placeholder="e.g. sp143212.exe, sp150000.exe" required></textarea>
+                            <small>Comma separated list of SoftPaqs. These must exist in your active local repository.</small>
+                        </div>
+                    </div>
+                    <div class="form-actions right">
+                        <button type="submit" class="btn btn-accent btn-glow"><i class="fa-solid fa-bolt"></i> Execute Deployment</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Logs Tab -->
+            <section id="tab-logs" class="tab-pane fade-in">
+                <div class="tab-header flex-between">
+                    <div>
+                        <h2><i class="fa-solid fa-terminal"></i> Execution Logs</h2>
+                        <p>Real-time view of backend processes.</p>
+                    </div>
+                    <button id="btn-refresh-logs" class="btn btn-secondary btn-icon"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+
+                <div class="log-viewer glass-card">
+                    <pre id="log-text"></pre>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i class="fa-solid fa-circle-check toast-icon"></i>
+        <span id="toast-msg">Action successful!</span>
+    </div>
+
+    <!-- Global Progress Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loading-text">Processing...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -33,7 +33,7 @@ jobs:
         
         # Compile Portable EXE
         $portableName = "CentralHPUpdater-$version-portable.exe"
-        Invoke-PS2EXE -InputFile "HP.UpdateManager.ps1" -OutputFile $portableName -noConsole
+        Invoke-PS2EXE -InputFile "..\scripts\securepaq-gui.ps1" -OutputFile $portableName -noConsole
         
         if (-not (Test-Path $portableName)) { 
             Write-Error "Portable EXE compilation failed!"
@@ -73,7 +73,10 @@ jobs:
         # Move Portable EXE
         $portableSrc = "HP.UpdateManager.Gui/CentralHPUpdater-$version-portable.exe"
         if (Test-Path $portableSrc) {
-            Move-Item $portableSrc "dist/"
+            New-Item -ItemType Directory -Force -Path "portable-temp/scripts/public"
+            Copy-Item $portableSrc "portable-temp/scripts/CentralHPUpdater.exe"
+            Copy-Item -Recurse -Force "scripts/public/*" "portable-temp/scripts/public/"
+            Compress-Archive -Path "portable-temp/*" -DestinationPath "dist/CentralHPUpdater-$version-portable.zip"
         }
 
         # Move Installer (if it exists)

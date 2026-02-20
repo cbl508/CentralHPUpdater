@@ -13,15 +13,13 @@ SolidCompression=yes
 OutputDir=Output
 
 [Files]
-Source: "CentralHPUpdater.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "HP.UpdateManager.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "MainWindow.xaml"; DestDir: "{app}"; Flags: ignoreversion
-Source: "run.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "CentralHPUpdater.exe"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "..\scripts\public\*"; DestDir: "{app}\scripts\public"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Modules\*"; DestDir: "{app}\Modules"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\CentralHPUpdater"; Filename: "{app}\run.bat"
-Name: "{commondesktop}\CentralHPUpdater"; Filename: "{app}\run.bat"
+Name: "{group}\CentralHPUpdater"; Filename: "{app}\scripts\CentralHPUpdater.exe"
+Name: "{commondesktop}\CentralHPUpdater"; Filename: "{app}\scripts\CentralHPUpdater.exe"
 
 [Run]
-Filename: "{app}\run.bat"; Description: "Launch CentralHPUpdater"; Flags: postinstall nowait
+Filename: "{app}\scripts\CentralHPUpdater.exe"; Description: "Launch CentralHPUpdater"; Flags: postinstall nowait
