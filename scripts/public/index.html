@@ -289,6 +289,7 @@
                                 <th>Status</th>
                                 <th>Model & Platform</th>
                                 <th>OS Version</th>
+                                <th>Updates</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -308,13 +309,12 @@
                     <div class="form-row full-width">
                         <div class="input-group">
                             <label>Bulk Deploy to Selected</label>
-                            <div class="input-card">
-                                <input type="text" id="bulk-packages" placeholder="e.g. sp123456.exe, sp654321.exe" />
+                            <div class="input-card" style="display: flex; gap: 1rem; align-items: center;">
                                 <button class="btn btn-accent btn-glow" id="btn-bulk-deploy"><i
-                                        class="fa-solid fa-bolt"></i> Push Updates</button>
+                                        class="fa-solid fa-bolt"></i> Push Applicable Updates</button>
+                                <span class="text-muted" style="font-size: 0.9rem;">Installs all missing SoftPaqs
+                                    discovered during scanning.</span>
                             </div>
-                            <small>Comma separated list of SoftPaqs. These must exist in your active local
-                                repository.</small>
                         </div>
                     </div>
                 </div>

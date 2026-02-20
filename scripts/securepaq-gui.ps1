@@ -35,20 +35,61 @@ function Initialize-HPRepoModule {
 
 Initialize-HPRepoModule
 
-$script:logs = @()
+# PS2EXE compiled with -noConsole forcibly redirects these cmdlets to WinForms message boxes.
+# We must delete these overrides so they write silently to the background job streams.
+$ps2exeOverrides = @('Write-Host', 'Write-Verbose', 'Write-Warning', 'Write-Information', 'Write-Debug', 'Write-Progress')
+foreach ($cmd in $ps2exeOverrides) {
+  if (Get-Command $cmd -CommandType Function -ErrorAction SilentlyContinue) {
+    Remove-Item "Function:\$cmd" -ErrorAction SilentlyContinue
+  }
+}
+
+$script:apiLogs = New-Object System.Collections.Generic.List[string]
+$script:apiLogsMaxCount = 500
+$script:activeJobs = @()
 $script:repoPath = 'C:\SecurePacs'
 if (-not (Test-Path $script:repoPath)) {
   New-Item -ItemType Directory -Path $script:repoPath -Force | Out-Null
 }
 
-function Write-ApiLog {
-  param([string]$Message)
-  $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-  $entry = "[$timestamp] $Message"
-  $script:logs += $entry
-  # Keep only last 1000 logs
-  if ($script:logs.Count -gt 1000) { $script:logs = $script:logs[-1000..-1] }
-  Write-Host $entry
+function Write-ApiLog ($Message) {
+  $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+  $script:apiLogs.Add("[$timestamp] $Message")
+  
+  if ($script:apiLogs.Count -gt $script:apiLogsMaxCount) {
+    $script:apiLogs.RemoveAt(0)
+  }
+  Write-Host "[$timestamp] $Message" # Also write to host for immediate feedback
+}
+
+function Update-ActiveJobs {
+  if ($script:activeJobs.Count -eq 0) { return }
+
+  foreach ($job in $script:activeJobs) {
+    if ($null -eq $job) { continue }
+
+    # Capture main output
+    $results = Receive-Job -Job $job
+    foreach ($res in $results) { Write-ApiLog "[Task $($job.Id)] Output: $res" }
+
+    # Capture verbose, err, warning streams from child runspace
+    if ($job.ChildJobs.Count -gt 0) {
+      foreach ($child in $job.ChildJobs) {
+        $child.Verbose.ReadAll() | ForEach-Object { Write-ApiLog "[Task $($job.Id)] $_" }
+        $child.Warning.ReadAll() | ForEach-Object { Write-ApiLog "[Task $($job.Id)] WARN: $_" }
+        $child.Error.ReadAll()   | ForEach-Object { Write-ApiLog "[Task $($job.Id)] ERROR: $_" }
+        $child.Information.ReadAll() | ForEach-Object { Write-ApiLog "[Task $($job.Id)] INFO: $_" }
+      }
+    }
+
+    # If job finished, remove from tracking
+    if ($job.State -ne 'Running') {
+      Write-ApiLog "[Task $($job.Id)] Finished with state: $($job.State)"
+      Remove-Job -Job $job -Force
+    }
+  }
+
+  $script:activeJobs = @($script:activeJobs | Where-Object { $_.State -eq 'Running' })
 }
 
 function ConvertFrom-JsonString {
@@ -163,7 +204,10 @@ try {
             }
           }
           '^/api/logs$' {
-            $resData.logs = $script:logs
+            if ($method -eq 'GET') {
+              Update-ActiveJobs
+              $resData.logs = $script:apiLogs.ToArray()
+            }
           }
           '^/api/info$' {
             Push-Location $script:repoPath
@@ -214,43 +258,45 @@ try {
             if (-not (Test-Path $script:repoPath)) {
               New-Item -ItemType Directory -Path $script:repoPath | Out-Null
             }
-            Push-Location $script:repoPath
-            try {
-              Initialize-HPRepository -Verbose *>&1 | ForEach-Object { Write-ApiLog "$_" }
-            }
-            catch {
-              $resData.success = $false
-              $resData.message = $_.Exception.Message
-            }
-            finally {
-              Pop-Location
-            }
+            Write-ApiLog "Starting Initialize-HPRepository background task..."
+            $job = Start-Job -ScriptBlock {
+              param($repoPath)
+              $ProgressPreference = 'SilentlyContinue'
+              import-Module HP.Repo -ErrorAction SilentlyContinue
+              Push-Location $repoPath
+              Initialize-HPRepository -Verbose -Confirm:$false
+            } -ArgumentList $script:repoPath
+            $script:activeJobs += $job
+            $resData.message = "Task $($job.Id) created"
           }
           '^/api/sync$' {
-            Push-Location $script:repoPath
-            try {
-              Invoke-HPRepositorySync -ReferenceUrl $reqBody.refUrl -Verbose *>&1 | ForEach-Object { Write-ApiLog "$_" }
-            }
-            catch {
-              $resData.success = $false
-              $resData.message = $_.Exception.Message
-            }
-            finally {
-              Pop-Location
-            }
+            Write-ApiLog "Starting Invoke-HPRepositorySync background task..."
+            $job = Start-Job -ScriptBlock {
+              param($repoPath, $refUrl)
+              $ProgressPreference = 'SilentlyContinue'
+              Import-Module HP.Repo -ErrorAction SilentlyContinue
+              Push-Location $repoPath
+              if ($refUrl) {
+                Invoke-HPRepositorySync -ReferenceUrl $refUrl -Verbose -Confirm:$false
+              }
+              else {
+                Invoke-HPRepositorySync -Verbose -Confirm:$false
+              }
+            } -ArgumentList $script:repoPath, $reqBody.refUrl
+            $script:activeJobs += $job
+            $resData.message = "Task $($job.Id) created"
           }
           '^/api/cleanup$' {
-            Push-Location $script:repoPath
-            try {
-              Invoke-HPRepositoryCleanup -Verbose *>&1 | ForEach-Object { Write-ApiLog "$_" }
-            }
-            catch {
-              $resData.success = $false
-              $resData.message = $_.Exception.Message
-            }
-            finally {
-              Pop-Location
-            }
+            Write-ApiLog "Starting Invoke-HPRepositoryCleanup background task..."
+            $job = Start-Job -ScriptBlock {
+              param($repoPath)
+              $ProgressPreference = 'SilentlyContinue'
+              Import-Module HP.Repo -ErrorAction SilentlyContinue
+              Push-Location $repoPath
+              Invoke-HPRepositoryCleanup -Verbose -Confirm:$false
+            } -ArgumentList $script:repoPath
+            $script:activeJobs += $job
+            $resData.message = "Task $($job.Id) created"
           }
           '^/api/filter$' {
             Push-Location $script:repoPath
@@ -318,6 +364,22 @@ try {
                   platform = $(if ($baseBoard.Product) { $baseBoard.Product } else { 'Unknown' })
                   os       = $(if ($osInfo.Caption) { $osInfo.Caption -replace 'Microsoft Windows ', '' } else { 'Unknown' })
                 }
+                
+                # Check for applicable packages in the local repository
+                $applicable = @()
+                if ($resData.system.platform -ne 'Unknown') {
+                  $cvaFiles = Get-ChildItem -Path $script:repoPath -Filter "*.cva" -ErrorAction SilentlyContinue
+                  if ($cvaFiles) {
+                    $cvaMatches = $cvaFiles | Select-String -Pattern "SysId.*$($resData.system.platform)" -List -ErrorAction SilentlyContinue
+                    foreach ($m in $cvaMatches) {
+                      $exeName = $m.Filename -replace '\.cva$', '.exe'
+                      if (Test-Path (Join-Path $script:repoPath $exeName)) {
+                        $applicable += $exeName
+                      }
+                    }
+                  }
+                }
+                $resData.applicable = $applicable
               }
             }
             catch {

@@ -243,6 +243,18 @@ function renderFleetTable() {
             statusBadge = `<span class="badge badge-warning"><i class="fa-solid fa-spinner fa-spin"></i> Scanning</span>`;
         }
 
+        let updatesHtml = '<span class="text-muted">N/A</span>';
+        if (endpoint.applicable && endpoint.applicable.length > 0) {
+            updatesHtml = `
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="badge badge-warning">${endpoint.applicable.length} Available</span>
+                    <button class="btn btn-accent btn-sm btn-deploy-single" data-index="${index}" title="Push Updates"><i class="fa-solid fa-bolt"></i></button>
+                </div>
+            `;
+        } else if (endpoint.applicable && endpoint.applicable.length === 0) {
+            updatesHtml = `<span class="badge badge-success">Up to date</span>`;
+        }
+
         tr.innerHTML = `
             <td><input type="checkbox" class="row-checkbox endpoint-select" data-index="${index}"></td>
             <td><strong>${endpoint.hostname}</strong></td>
@@ -252,6 +264,7 @@ function renderFleetTable() {
                    <div class="sys-item small text-muted">ID: ${endpoint.system.platform} | SN: ${endpoint.system.serial}</div>` : '<span class="text-muted">N/A</span>'}
             </td>
             <td>${endpoint.system ? `<i class="fa-brands fa-windows"></i> ${endpoint.system.os}` : '<span class="text-muted">N/A</span>'}</td>
+            <td>${updatesHtml}</td>
             <td>
                 <div class="table-actions">
                     <button class="btn btn-icon btn-scan" data-index="${index}" title="Scan Endpoint"><i class="fa-solid fa-radar"></i></button>
@@ -271,6 +284,24 @@ function renderFleetTable() {
         btn.addEventListener('click', (e) => {
             fleetState.splice(e.currentTarget.dataset.index, 1);
             renderFleetTable();
+        });
+    });
+
+    document.querySelectorAll('.btn-deploy-single').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const index = e.currentTarget.dataset.index;
+            const endpoint = fleetState[index];
+            if (!endpoint.applicable || endpoint.applicable.length === 0) return;
+
+            showLoading(`Pushing ${endpoint.applicable.length} updates to ${endpoint.hostname}...`);
+            const res = await apiCall('/deploy', 'POST', { targets: endpoint.hostname, packages: endpoint.applicable });
+            hideLoading();
+
+            if (res.success) {
+                showToast('Deployment Command Sent. Check Logs for status.');
+            } else {
+                showToast(res.message, true);
+            }
         });
     });
 
@@ -300,6 +331,7 @@ async function scanEndpoint(index) {
     if (res.success && res.status) {
         endpoint.status = res.status;
         if (res.system) endpoint.system = res.system;
+        if (res.applicable) endpoint.applicable = res.applicable;
     } else {
         endpoint.status = 'Offline';
     }
@@ -326,24 +358,27 @@ document.getElementById('btn-bulk-deploy').addEventListener('click', async () =>
         return;
     }
 
-    const packagesStr = document.getElementById('bulk-packages').value;
-    const packages = packagesStr.split(',').map(s => s.trim()).filter(Boolean);
+    let totalDeployments = 0;
 
-    if (packages.length === 0) {
-        showToast('Please specify at least one package to deploy.', true);
-        return;
+    for (const idx of selectedIndexes) {
+        const endpoint = fleetState[idx];
+        if (endpoint.applicable && endpoint.applicable.length > 0) {
+            showLoading(`Pushing ${endpoint.applicable.length} updates to ${endpoint.hostname}...`);
+            const res = await apiCall('/deploy', 'POST', { targets: endpoint.hostname, packages: endpoint.applicable });
+            if (res.success) {
+                totalDeployments++;
+            } else {
+                showToast(`Failed on ${endpoint.hostname}: ${res.message}`, true);
+            }
+        }
     }
 
-    const targets = selectedIndexes.map(idx => fleetState[idx].hostname).join(', ');
-
-    showLoading('Executing Bulk Deployment...');
-    const res = await apiCall('/deploy', 'POST', { targets: targets, packages: packages });
     hideLoading();
 
-    if (res.success) {
-        showToast('Deployment Command Sent. Check Logs for status.');
+    if (totalDeployments > 0) {
+        showToast(`Deployment Commands Sent to ${totalDeployments} endpoints. Check Logs for status.`);
     } else {
-        showToast(res.message, true);
+        showToast('No applicable updates found for selected endpoints.', true);
     }
 });
 
