@@ -78,7 +78,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
-                                <Path Data="{Binding Tag, RelativeSource={RelativeSource AncestorType=Button}}" Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,8,0" Visibility="{Binding Tag, RelativeSource={RelativeSource AncestorType=Button}, Converter={x:Static BooleanToVisibilityConverter.Instance}}"/>
+                                <Path x:Name="btnIcon" Data="{Binding Tag, RelativeSource={RelativeSource AncestorType=Button}}" Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,8,0" />
                                 <ContentPresenter/>
                             </StackPanel>
                         </Border>
@@ -86,6 +86,9 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
                             </Trigger>
+                            <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                                <Setter TargetName="btnIcon" Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -454,8 +457,11 @@
         </Grid>
         
         <!-- Loading Overlay -->
-        <Grid Name="LoadingOverlay" Grid.ColumnSpan="2" Background="#80000000" Visibility="Collapsed">
-            <Border Background="#252526" CornerRadius="8" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40" Effect="{StaticResource {x:Static DropShadowEffect.Default}}">
+    <Grid Name="LoadingOverlay" Grid.ColumnSpan="2" Background="#80000000" Visibility="Collapsed">
+            <Border Background="#252526" CornerRadius="8" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.5" BlurRadius="20" ShadowDepth="5"/>
+                </Border.Effect>
                 <StackPanel>
                     <ProgressBar Name="PbLoading" Width="200" Height="4" IsIndeterminate="True" Foreground="{StaticResource AccentBrush}" Background="#333333" BorderThickness="0" Margin="0,0,0,20"/>
                     <TextBlock Text="PROCESSING" FontSize="14" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
