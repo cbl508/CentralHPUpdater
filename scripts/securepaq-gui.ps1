@@ -11,8 +11,16 @@ if (-not ([System.Environment]::OSVersion.Platform -eq 'Win32NT')) {
 # Add required assemblies
 Add-Type -AssemblyName System.Web
 
+function Get-ScriptDirectory {
+  if ($PSScriptRoot) { return $PSScriptRoot }
+  if ($MyInvocation.MyCommand.Path) { return Split-Path -Parent $MyInvocation.MyCommand.Path }
+  return [System.AppDomain]::CurrentDomain.BaseDirectory.TrimEnd('\')
+}
+
+$Global:ScriptDir = Get-ScriptDirectory
+
 function Initialize-HPRepoModule {
-  $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+  $repoRoot = (Resolve-Path (Join-Path $Global:ScriptDir '..')).Path
   $modulesPath = Join-Path $repoRoot 'Modules'
 
   if (-not (Test-Path $modulesPath)) {
@@ -78,7 +86,7 @@ $listener.Start()
 Write-ApiLog "Backend server listening on http://localhost:$port"
 Start-Process "http://localhost:$port"
 
-$publicDir = Join-Path $PSScriptRoot 'public'
+$publicDir = Join-Path $Global:ScriptDir 'public'
 if (-not (Test-Path $publicDir)) {
   New-Item -ItemType Directory -Path $publicDir | Out-Null
 }
