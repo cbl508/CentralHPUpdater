@@ -12,8 +12,8 @@ if (-not ([System.Environment]::OSVersion.Platform -eq 'Win32NT')) {
 Add-Type -AssemblyName System.Web
 
 function Get-ScriptDirectory {
-  if ($PSScriptRoot) { return $PSScriptRoot }
-  if ($MyInvocation.MyCommand.Path) { return Split-Path -Parent $MyInvocation.MyCommand.Path }
+  if ($null -ne $PSScriptRoot -and $PSScriptRoot -ne '') { return $PSScriptRoot }
+  if ($null -ne $MyInvocation -and $null -ne $MyInvocation.MyCommand -and $null -ne $MyInvocation.MyCommand.Path) { return Split-Path -Parent $MyInvocation.MyCommand.Path }
   return [System.AppDomain]::CurrentDomain.BaseDirectory.TrimEnd('\')
 }
 
@@ -37,7 +37,7 @@ function Initialize-HPRepoModule {
 Initialize-HPRepoModule
 
 $script:logs = @()
-$script:repoPath = (Get-Location).Path
+$script:repoPath = [System.Environment]::CurrentDirectory
 
 function Write-ApiLog {
   param([string]$Message)
