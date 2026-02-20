@@ -4,8 +4,8 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-if (-not $IsWindows) {
-  throw 'This GUI requires Windows PowerShell/PowerShell on Windows.'
+if (-not ([System.Environment]::OSVersion.Platform -eq 'Win32NT')) {
+  throw 'This GUI requires Windows.'
 }
 
 # Add required assemblies
