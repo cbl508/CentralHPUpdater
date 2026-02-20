@@ -36,8 +36,7 @@ function Initialize-HPRepoModule {
 Initialize-HPRepoModule
 
 $script:logs = @()
-$defaultAppPath = Join-Path $env:APPDATA 'CentralHPUpdater'
-$script:repoPath = Join-Path $defaultAppPath 'Repository'
+$script:repoPath = 'C:\SecurePacs'
 if (-not (Test-Path $script:repoPath)) {
   New-Item -ItemType Directory -Path $script:repoPath -Force | Out-Null
 }
