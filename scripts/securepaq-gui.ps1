@@ -319,7 +319,7 @@ try {
             try {
               if ($method -eq 'DELETE') {
                 if (-not $reqBody.Platform) { throw 'Platform ID is required for deletion.' }
-                Remove-HPRepositoryFilter -Platform $reqBody.Platform -Verbose *>&1 | ForEach-Object { Write-ApiLog "$_" }
+                Remove-HPRepositoryFilter -Platform $reqBody.Platform -Confirm:$false -Verbose *>&1 | ForEach-Object { Write-ApiLog "$_" }
               }
               else {
                 if (-not $reqBody.Platform -or $reqBody.Platform -notmatch '^[A-Fa-f0-9]{4}$') {
