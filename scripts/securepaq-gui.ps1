@@ -20,7 +20,7 @@ function Get-ScriptDirectory {
 $Global:ScriptDir = Get-ScriptDirectory
 
 function Initialize-HPRepoModule {
-  $repoRoot = (Resolve-Path (Join-Path $Global:ScriptDir '..')).Path
+  $repoRoot = Split-Path $Global:ScriptDir -Parent
   $modulesPath = Join-Path $repoRoot 'Modules'
 
   if (-not (Test-Path $modulesPath)) {
