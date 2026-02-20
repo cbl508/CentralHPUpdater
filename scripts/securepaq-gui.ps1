@@ -68,9 +68,14 @@ function Update-ActiveJobs {
   foreach ($job in $script:activeJobs) {
     if ($null -eq $job) { continue }
 
-    # Capture main output
-    $results = Receive-Job -Job $job
-    foreach ($res in $results) { Write-ApiLog "[Task $($job.Id)] Output: $res" }
+    # Capture main output, ignoring terminating errors so polling doesn't break
+    try {
+      $results = Receive-Job -Job $job -ErrorAction SilentlyContinue
+      foreach ($res in $results) { Write-ApiLog "[Task $($job.Id)] Output: $res" }
+    }
+    catch {
+      Write-ApiLog "[Task $($job.Id)] ERROR: $_"
+    }
 
     # Capture verbose, err, warning streams from child runspace
     if ($job.ChildJobs.Count -gt 0) {
@@ -264,7 +269,7 @@ try {
               $ProgressPreference = 'SilentlyContinue'
               import-Module HP.Repo -ErrorAction SilentlyContinue
               Push-Location $repoPath
-              Initialize-HPRepository -Verbose -Confirm:$false
+              Initialize-HPRepository -Verbose
             } -ArgumentList $script:repoPath
             $script:activeJobs += $job
             $resData.message = "Task $($job.Id) created"
@@ -277,10 +282,10 @@ try {
               Import-Module HP.Repo -ErrorAction SilentlyContinue
               Push-Location $repoPath
               if ($refUrl) {
-                Invoke-HPRepositorySync -ReferenceUrl $refUrl -Verbose -Confirm:$false
+                Invoke-HPRepositorySync -ReferenceUrl $refUrl -Verbose
               }
               else {
-                Invoke-HPRepositorySync -Verbose -Confirm:$false
+                Invoke-HPRepositorySync -Verbose
               }
             } -ArgumentList $script:repoPath, $reqBody.refUrl
             $script:activeJobs += $job
@@ -293,7 +298,7 @@ try {
               $ProgressPreference = 'SilentlyContinue'
               Import-Module HP.Repo -ErrorAction SilentlyContinue
               Push-Location $repoPath
-              Invoke-HPRepositoryCleanup -Verbose -Confirm:$false
+              Invoke-HPRepositoryCleanup -Verbose
             } -ArgumentList $script:repoPath
             $script:activeJobs += $job
             $resData.message = "Task $($job.Id) created"
