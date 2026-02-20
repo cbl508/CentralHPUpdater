@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param()
 
-Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 if (-not ([System.Environment]::OSVersion.Platform -eq 'Win32NT')) {
@@ -12,8 +11,8 @@ if (-not ([System.Environment]::OSVersion.Platform -eq 'Win32NT')) {
 Add-Type -AssemblyName System.Web
 
 function Get-ScriptDirectory {
-  if ($null -ne $PSScriptRoot -and $PSScriptRoot -ne '') { return $PSScriptRoot }
-  if ($null -ne $MyInvocation -and $null -ne $MyInvocation.MyCommand -and $null -ne $MyInvocation.MyCommand.Path) { return Split-Path -Parent $MyInvocation.MyCommand.Path }
+  if ($PSScriptRoot) { return $PSScriptRoot }
+  if ($MyInvocation.MyCommand.Path) { return Split-Path -Parent $MyInvocation.MyCommand.Path }
   return [System.AppDomain]::CurrentDomain.BaseDirectory.TrimEnd('\')
 }
 
