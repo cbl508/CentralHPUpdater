@@ -230,7 +230,7 @@ try {
                 RepositoryReport     = [string]$report
               }
 
-              $filters = Get-HPRepositoryFilter -ErrorAction SilentlyContinue
+              $filters = (Get-HPRepositoryInfo).Filters
               if ($filters -and $filters.Count -gt 0) {
                 $resData.filters = @($filters | Select-Object platform, os, osVer, category, releaseType, characteristic, preferLTSC, version)
               }
