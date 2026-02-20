@@ -36,7 +36,11 @@ function Initialize-HPRepoModule {
 Initialize-HPRepoModule
 
 $script:logs = @()
-$script:repoPath = [System.Environment]::CurrentDirectory
+$defaultAppPath = Join-Path $env:APPDATA 'CentralHPUpdater'
+$script:repoPath = Join-Path $defaultAppPath 'Repository'
+if (-not (Test-Path $script:repoPath)) {
+  New-Item -ItemType Directory -Path $script:repoPath -Force | Out-Null
+}
 
 function Write-ApiLog {
   param([string]$Message)
