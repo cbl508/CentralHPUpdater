@@ -159,7 +159,6 @@ document.getElementById('btn-info').addEventListener('click', async () => {
             document.getElementById('s-cache').value = res.settings.OfflineCacheMode || 'Disable';
             document.getElementById('s-report').value = res.settings.RepositoryReport || 'CSV';
         }
-        showToast('Information Updated');
     } else {
         showToast(res.message, true);
     }
@@ -167,7 +166,6 @@ document.getElementById('btn-info').addEventListener('click', async () => {
 
 document.getElementById('btn-refresh-logs').addEventListener('click', () => {
     fetchLogs();
-    showToast('Logs refreshed');
 });
 
 // Settings Form
@@ -216,17 +214,132 @@ document.getElementById('filter-form').addEventListener('submit', async (e) => {
     }
 });
 
-// Deploy Form
-document.getElementById('deploy-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-        targets: document.getElementById('d-targets').value,
-        packages: document.getElementById('d-packages').value.split(',').map(s => s.trim()).filter(Boolean)
-    };
+// Fleet Management
+let fleetState = [];
 
-    showLoading('Executing Deployment...');
-    const res = await apiCall('/deploy', 'POST', data);
+function renderFleetTable() {
+    const tbody = document.getElementById('fleet-table-body');
+    const emptyState = document.getElementById('fleet-empty-state');
+    const bulkActions = document.getElementById('fleet-bulk-actions');
+
+    tbody.innerHTML = '';
+
+    if (fleetState.length === 0) {
+        tbody.parentElement.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        bulkActions.classList.add('hidden');
+        return;
+    }
+
+    tbody.parentElement.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    bulkActions.classList.remove('hidden');
+
+    fleetState.forEach((endpoint, index) => {
+        const tr = document.createElement('tr');
+
+        let statusBadge = `<span class="badge ${endpoint.status === 'Online' ? 'badge-success' : 'badge-danger'}">${endpoint.status || 'Unknown'}</span>`;
+        if (endpoint.status === 'Scanning') {
+            statusBadge = `<span class="badge badge-warning"><i class="fa-solid fa-spinner fa-spin"></i> Scanning</span>`;
+        }
+
+        tr.innerHTML = `
+            <td><input type="checkbox" class="row-checkbox endpoint-select" data-index="${index}"></td>
+            <td><strong>${endpoint.hostname}</strong></td>
+            <td>${statusBadge}</td>
+            <td>
+                ${endpoint.system ? `<div class="sys-item"><i class="fa-solid fa-laptop"></i> ${endpoint.system.model}</div>
+                   <div class="sys-item small text-muted">ID: ${endpoint.system.platform} | SN: ${endpoint.system.serial}</div>` : '<span class="text-muted">N/A</span>'}
+            </td>
+            <td>${endpoint.system ? `<i class="fa-brands fa-windows"></i> ${endpoint.system.os}` : '<span class="text-muted">N/A</span>'}</td>
+            <td>
+                <div class="table-actions">
+                    <button class="btn btn-icon btn-scan" data-index="${index}" title="Scan Endpoint"><i class="fa-solid fa-radar"></i></button>
+                    <button class="btn btn-icon btn-remove text-danger" data-index="${index}" title="Remove"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Add event listeners to new buttons
+    document.querySelectorAll('.btn-scan').forEach(btn => {
+        btn.addEventListener('click', (e) => scanEndpoint(e.currentTarget.dataset.index));
+    });
+
+    document.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            fleetState.splice(e.currentTarget.dataset.index, 1);
+            renderFleetTable();
+        });
+    });
+
+    updateBulkSelection();
+}
+
+document.getElementById('btn-add-endpoint').addEventListener('click', () => {
+    const hostname = prompt('Enter the hostname or IP address of the target PC:');
+    if (hostname && hostname.trim()) {
+        fleetState.push({
+            hostname: hostname.trim(),
+            status: 'Pending',
+            system: null
+        });
+        renderFleetTable();
+        scanEndpoint(fleetState.length - 1);
+    }
+});
+
+async function scanEndpoint(index) {
+    const endpoint = fleetState[index];
+    endpoint.status = 'Scanning';
+    renderFleetTable();
+
+    const res = await apiCall('/fleet/scan', 'POST', { hostname: endpoint.hostname });
+
+    if (res.success && res.status) {
+        endpoint.status = res.status;
+        if (res.system) endpoint.system = res.system;
+    } else {
+        endpoint.status = 'Offline';
+    }
+    renderFleetTable();
+}
+
+// Select All logic
+document.getElementById('fleet-select-all').addEventListener('change', (e) => {
+    const checkboxes = document.querySelectorAll('.endpoint-select');
+    checkboxes.forEach(cb => cb.checked = e.target.checked);
+});
+
+function updateBulkSelection() {
+    const checkAll = document.getElementById('fleet-select-all');
+    if (checkAll) checkAll.checked = false;
+}
+
+// Bulk Deploy logic
+document.getElementById('btn-bulk-deploy').addEventListener('click', async () => {
+    const selectedIndexes = Array.from(document.querySelectorAll('.endpoint-select:checked')).map(cb => parseInt(cb.dataset.index));
+
+    if (selectedIndexes.length === 0) {
+        showToast('Please select at least one endpoint.', true);
+        return;
+    }
+
+    const packagesStr = document.getElementById('bulk-packages').value;
+    const packages = packagesStr.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (packages.length === 0) {
+        showToast('Please specify at least one package to deploy.', true);
+        return;
+    }
+
+    const targets = selectedIndexes.map(idx => fleetState[idx].hostname).join(', ');
+
+    showLoading('Executing Bulk Deployment...');
+    const res = await apiCall('/deploy', 'POST', { targets: targets, packages: packages });
     hideLoading();
+
     if (res.success) {
         showToast('Deployment Command Sent. Check Logs for status.');
     } else {

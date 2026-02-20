@@ -104,6 +104,10 @@ try {
     if ($urlPath -eq '') { $urlPath = '/' }
 
     try {
+      if ($urlPath -eq '/favicon.ico') {
+        Send-Response -Response $response -StatusCode 204
+        continue
+      }
       if ($method -eq 'GET' -and ($urlPath -eq '/' -or $urlPath.StartsWith('/public') -or $urlPath -eq '/style.css' -or $urlPath -eq '/app.js')) {
         $filePath = if ($urlPath -eq '/') { 
           Join-Path $publicDir 'index.html' 
@@ -283,6 +287,42 @@ try {
             }
             finally {
               Pop-Location
+            }
+          }
+          '^/api/fleet/scan$' {
+            try {
+              $hostname = $reqBody.hostname
+              if (-not $hostname) { throw "Hostname is required" }
+
+              Write-ApiLog "Scanning endpoint $hostname..."
+              
+              if (-not (Test-Connection -ComputerName $hostname -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+                $resData.status = 'Offline'
+                $resData.message = 'Unreachable via Ping'
+              }
+              else {
+                $opt = New-CimSessionOption -Protocol Dcom
+                $session = New-CimSession -ComputerName $hostname -SessionOption $opt -ErrorAction Stop
+
+                $modelInfo = Get-CimInstance -ClassName Win32_ComputerSystem -CimSession $session
+                $biosInfo = Get-CimInstance -ClassName Win32_BIOS -CimSession $session
+                $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -CimSession $session
+                $baseBoard = Get-CimInstance -ClassName Win32_BaseBoard -CimSession $session
+
+                Remove-CimSession $session
+
+                $resData.status = 'Online'
+                $resData.system = @{
+                  model    = $(if ($modelInfo.Model) { $modelInfo.Model } else { 'Unknown' })
+                  serial   = $(if ($biosInfo.SerialNumber) { $biosInfo.SerialNumber } else { 'Unknown' })
+                  platform = $(if ($baseBoard.Product) { $baseBoard.Product } else { 'Unknown' })
+                  os       = $(if ($osInfo.Caption) { $osInfo.Caption -replace 'Microsoft Windows ', '' } else { 'Unknown' })
+                }
+              }
+            }
+            catch {
+              $resData.success = $false
+              $resData.message = $_.Exception.Message
             }
           }
           '^/api/deploy$' {

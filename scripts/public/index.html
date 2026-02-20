@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body class="dark-theme">
     <div class="background-blobs">
         <div class="blob blob-1"></div>
@@ -27,12 +29,13 @@
                     <span class="logo-subtext">Central Manager</span>
                 </div>
             </div>
-            
+
             <ul class="nav-links">
-                <li><button class="nav-btn active" data-tab="repository"><i class="fa-solid fa-server"></i> Repository</button></li>
+                <li><button class="nav-btn active" data-tab="repository"><i class="fa-solid fa-server"></i>
+                        Repository</button></li>
                 <li><button class="nav-btn" data-tab="filters"><i class="fa-solid fa-filter"></i> Filters</button></li>
                 <li><button class="nav-btn" data-tab="settings"><i class="fa-solid fa-gear"></i> Settings</button></li>
-                <li><button class="nav-btn" data-tab="deploy"><i class="fa-solid fa-rocket"></i> Deploy</button></li>
+                <li><button class="nav-btn" data-tab="fleet"><i class="fa-solid fa-server"></i> Fleet</button></li>
                 <li><button class="nav-btn" data-tab="logs"><i class="fa-solid fa-terminal"></i> Logs</button></li>
             </ul>
 
@@ -40,15 +43,17 @@
                 <p class="status-label">Current Repository</p>
                 <div class="path-input-group">
                     <input type="text" id="repo-path" placeholder="C:\Repository" />
-                    <button id="btn-set-path" class="btn btn-icon" title="Set Path"><i class="fa-solid fa-check"></i></button>
-                    <button id="btn-open-path" class="btn btn-icon" title="Open Folder (Not available in web)"><i class="fa-solid fa-folder-open"></i></button>
+                    <button id="btn-set-path" class="btn btn-icon" title="Set Path"><i
+                            class="fa-solid fa-check"></i></button>
+                    <button id="btn-open-path" class="btn btn-icon" title="Open Folder (Not available in web)"><i
+                            class="fa-solid fa-folder-open"></i></button>
                 </div>
             </div>
         </nav>
 
         <!-- Main Content Area -->
         <main class="content-area glass-panel">
-            
+
             <!-- Repository Tab -->
             <section id="tab-repository" class="tab-pane active fade-in">
                 <div class="tab-header">
@@ -57,29 +62,41 @@
                 </div>
 
                 <div class="actions-grid">
-                    <button class="btn btn-primary action-btn hover-grow" id="btn-init">
-                        <div class="btn-icon-large"><i class="fa-solid fa-box-open"></i></div>
-                        <span>Initialize Repo</span>
+                    <button class="btn btn-primary action-btn hover-grow desc-btn" id="btn-init">
+                        <div class="btn-top">
+                            <div class="btn-icon-large"><i class="fa-solid fa-box-open"></i></div>
+                            <span>Initialize Repo</span>
+                        </div>
+                        <span class="btn-desc">Creates a new repository metadata file in the folder.</span>
                     </button>
-                    <button class="btn btn-primary action-btn hover-grow" id="btn-sync">
-                        <div class="btn-icon-large"><i class="fa-solid fa-rotate"></i></div>
-                        <span>Run Sync</span>
+                    <button class="btn btn-primary action-btn hover-grow desc-btn" id="btn-sync">
+                        <div class="btn-top">
+                            <div class="btn-icon-large"><i class="fa-solid fa-rotate"></i></div>
+                            <span>Run Sync</span>
+                        </div>
+                        <span class="btn-desc">Downloads files missing in the local repository from HP.</span>
                     </button>
-                    <button class="btn btn-primary action-btn hover-grow" id="btn-cleanup">
-                        <div class="btn-icon-large"><i class="fa-solid fa-broom"></i></div>
-                        <span>Run Cleanup</span>
+                    <button class="btn btn-primary action-btn hover-grow desc-btn" id="btn-cleanup">
+                        <div class="btn-top">
+                            <div class="btn-icon-large"><i class="fa-solid fa-broom"></i></div>
+                            <span>Run Cleanup</span>
+                        </div>
+                        <span class="btn-desc">Deletes packages that no longer match active filters.</span>
                     </button>
-                    <button class="btn btn-secondary action-btn hover-grow" id="btn-info">
-                        <div class="btn-icon-large"><i class="fa-solid fa-circle-info"></i></div>
-                        <span>Refresh Info</span>
+                    <button class="btn btn-secondary action-btn hover-grow desc-btn" id="btn-info">
+                        <div class="btn-top">
+                            <div class="btn-icon-large"><i class="fa-solid fa-circle-info"></i></div>
+                            <span>Refresh Info</span>
+                        </div>
+                        <span class="btn-desc">Reloads the repository state and configurations.</span>
                     </button>
                 </div>
-                
+
                 <div class="input-card glass-card">
                     <label for="ref-url">Reference URL</label>
                     <input type="url" id="ref-url" value="https://hpia.hpcloud.hp.com/ref" />
                 </div>
-                
+
                 <div class="info-card glass-card">
                     <h3>Repository Information</h3>
                     <pre id="repo-info-text">Click "Refresh Info" to load repository details...</pre>
@@ -145,41 +162,59 @@
                         <div class="multi-select-group">
                             <label>Category</label>
                             <div class="checkbox-list" id="f-category">
-                                <label class="custom-checkbox"><input type="checkbox" value="Bios"><span class="checkmark"></span> Bios</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Firmware"><span class="checkmark"></span> Firmware</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Driver"><span class="checkmark"></span> Driver</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Software"><span class="checkmark"></span> Software</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Os"><span class="checkmark"></span> Os</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Manageability"><span class="checkmark"></span> Manageability</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Diagnostic"><span class="checkmark"></span> Diagnostic</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Utility"><span class="checkmark"></span> Utility</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Driverpack"><span class="checkmark"></span> Driverpack</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Dock"><span class="checkmark"></span> Dock</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="UWPPack"><span class="checkmark"></span> UWPPack</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Bios"><span
+                                        class="checkmark"></span> Bios</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Firmware"><span
+                                        class="checkmark"></span> Firmware</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Driver"><span
+                                        class="checkmark"></span> Driver</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Software"><span
+                                        class="checkmark"></span> Software</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Os"><span
+                                        class="checkmark"></span> Os</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Manageability"><span
+                                        class="checkmark"></span> Manageability</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Diagnostic"><span
+                                        class="checkmark"></span> Diagnostic</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Utility"><span
+                                        class="checkmark"></span> Utility</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Driverpack"><span
+                                        class="checkmark"></span> Driverpack</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Dock"><span
+                                        class="checkmark"></span> Dock</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="UWPPack"><span
+                                        class="checkmark"></span> UWPPack</label>
                             </div>
                         </div>
 
                         <div class="multi-select-group">
                             <label>Release Type</label>
                             <div class="checkbox-list" id="f-release">
-                                <label class="custom-checkbox"><input type="checkbox" value="Critical"><span class="checkmark"></span> Critical</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Recommended"><span class="checkmark"></span> Recommended</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="Routine"><span class="checkmark"></span> Routine</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Critical"><span
+                                        class="checkmark"></span> Critical</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Recommended"><span
+                                        class="checkmark"></span> Recommended</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="Routine"><span
+                                        class="checkmark"></span> Routine</label>
                             </div>
                         </div>
 
                         <div class="multi-select-group">
                             <label>Characteristic</label>
                             <div class="checkbox-list" id="f-char">
-                                <label class="custom-checkbox"><input type="checkbox" value="SSM"><span class="checkmark"></span> SSM</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="DPB"><span class="checkmark"></span> DPB</label>
-                                <label class="custom-checkbox"><input type="checkbox" value="UWP"><span class="checkmark"></span> UWP</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="SSM"><span
+                                        class="checkmark"></span> SSM</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="DPB"><span
+                                        class="checkmark"></span> DPB</label>
+                                <label class="custom-checkbox"><input type="checkbox" value="UWP"><span
+                                        class="checkmark"></span> UWP</label>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-actions right">
-                        <button type="submit" class="btn btn-primary btn-glow"><i class="fa-solid fa-plus"></i> Add Filter</button>
+                        <button type="submit" class="btn btn-primary btn-glow"><i class="fa-solid fa-plus"></i> Add
+                            Filter</button>
                     </div>
                 </form>
             </section>
@@ -228,37 +263,61 @@
                         </div>
                     </div>
                     <div class="form-actions right">
-                        <button type="submit" class="btn btn-primary btn-glow"><i class="fa-solid fa-floppy-disk"></i> Apply Settings</button>
+                        <button type="submit" class="btn btn-primary btn-glow"><i class="fa-solid fa-floppy-disk"></i>
+                            Apply Settings</button>
                     </div>
                 </form>
             </section>
 
-            <!-- Deploy Tab -->
-            <section id="tab-deploy" class="tab-pane fade-in">
-                <div class="tab-header">
-                    <h2><i class="fa-solid fa-rocket"></i> Remote Deployment</h2>
-                    <p>Push SoftPaqs to LAN endpoints using PowerShell Remoting.</p>
+            <!-- Fleet Management Tab -->
+            <section id="tab-fleet" class="tab-pane fade-in">
+                <div class="tab-header flex-between">
+                    <div>
+                        <h2><i class="fa-solid fa-network-wired"></i> Fleet Management</h2>
+                        <p>Manage endpoints, scan for missing updates, and push SoftPaqs.</p>
+                    </div>
+                    <button class="btn btn-primary btn-glow" id="btn-add-endpoint"><i class="fa-solid fa-plus"></i> Add
+                        Endpoint</button>
                 </div>
 
-                <form id="deploy-form" class="form-container glass-card">
+                <div class="glass-card fleet-table-container">
+                    <table class="fleet-table">
+                        <thead>
+                            <tr>
+                                <th width="40"><input type="checkbox" id="fleet-select-all" class="row-checkbox"></th>
+                                <th>Hostname</th>
+                                <th>Status</th>
+                                <th>Model & Platform</th>
+                                <th>OS Version</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fleet-table-body">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+
+                    <div id="fleet-empty-state" class="empty-state">
+                        <i class="fa-solid fa-desktop"></i>
+                        <p>No endpoints added yet. Click "Add Endpoint" to build your fleet list.</p>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div class="deploy-controls glass-card hidden" id="fleet-bulk-actions">
                     <div class="form-row full-width">
                         <div class="input-group">
-                            <label for="d-targets">Target PC Hostnames / IPs</label>
-                            <textarea id="d-targets" rows="2" placeholder="e.g. PC-01, PC-02, 192.168.1.50" required></textarea>
-                            <small>Comma separated list of target network names.</small>
+                            <label>Bulk Deploy to Selected</label>
+                            <div class="input-card">
+                                <input type="text" id="bulk-packages" placeholder="e.g. sp123456.exe, sp654321.exe" />
+                                <button class="btn btn-accent btn-glow" id="btn-bulk-deploy"><i
+                                        class="fa-solid fa-bolt"></i> Push Updates</button>
+                            </div>
+                            <small>Comma separated list of SoftPaqs. These must exist in your active local
+                                repository.</small>
                         </div>
                     </div>
-                    <div class="form-row full-width">
-                        <div class="input-group">
-                            <label for="d-packages">Packages to Deploy</label>
-                            <textarea id="d-packages" rows="2" placeholder="e.g. sp143212.exe, sp150000.exe" required></textarea>
-                            <small>Comma separated list of SoftPaqs. These must exist in your active local repository.</small>
-                        </div>
-                    </div>
-                    <div class="form-actions right">
-                        <button type="submit" class="btn btn-accent btn-glow"><i class="fa-solid fa-bolt"></i> Execute Deployment</button>
-                    </div>
-                </form>
+                </div>
             </section>
 
             <!-- Logs Tab -->
@@ -268,10 +327,11 @@
                         <h2><i class="fa-solid fa-terminal"></i> Execution Logs</h2>
                         <p>Real-time view of backend processes.</p>
                     </div>
-                    <button id="btn-refresh-logs" class="btn btn-secondary btn-icon"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button id="btn-refresh-logs" class="btn btn-secondary btn-icon"><i
+                            class="fa-solid fa-rotate-right"></i></button>
                 </div>
 
-                <div class="log-viewer glass-card">
+                <div id="log-viewer" class="log-viewer glass-card">
                     <pre id="log-text"></pre>
                 </div>
             </section>
@@ -292,4 +352,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
