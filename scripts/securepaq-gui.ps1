@@ -84,6 +84,14 @@ function Update-ActiveJobs {
         $child.Warning.ReadAll() | ForEach-Object { Write-ApiLog "[Task $($job.Id)] WARN: $_" }
         $child.Error.ReadAll()   | ForEach-Object { Write-ApiLog "[Task $($job.Id)] ERROR: $_" }
         $child.Information.ReadAll() | ForEach-Object { Write-ApiLog "[Task $($job.Id)] INFO: $_" }
+        $child.Progress.ReadAll() | ForEach-Object {
+          if ($_.PercentComplete -ge 0) {
+            Write-ApiLog "[Task $($job.Id)] PROGRESS: $($_.Activity) - $($_.StatusDescription) [$($_.PercentComplete)%]"
+          }
+          else {
+            Write-ApiLog "[Task $($job.Id)] PROGRESS: $($_.Activity) - $($_.StatusDescription)"
+          }
+        }
       }
     }
 
@@ -277,7 +285,6 @@ try {
             Write-ApiLog "Starting Initialize-HPRepository background task..."
             $job = Start-Job -ScriptBlock {
               param($repoPath)
-              $ProgressPreference = 'SilentlyContinue'
               import-Module HP.Repo -ErrorAction SilentlyContinue
               Push-Location $repoPath
               Initialize-HPRepository -Verbose
@@ -289,7 +296,6 @@ try {
             Write-ApiLog "Starting Invoke-HPRepositorySync background task..."
             $job = Start-Job -ScriptBlock {
               param($repoPath, $refUrl)
-              $ProgressPreference = 'SilentlyContinue'
               Import-Module HP.Repo -ErrorAction SilentlyContinue
               Push-Location $repoPath
               if ($refUrl) {
@@ -306,7 +312,6 @@ try {
             Write-ApiLog "Starting Invoke-HPRepositoryCleanup background task..."
             $job = Start-Job -ScriptBlock {
               param($repoPath)
-              $ProgressPreference = 'SilentlyContinue'
               Import-Module HP.Repo -ErrorAction SilentlyContinue
               Push-Location $repoPath
               Invoke-HPRepositoryCleanup -Verbose
@@ -437,37 +442,35 @@ try {
 
                   Write-ApiLog "Deploying $pkg to $pctarget..."
                                     
-                  # Copy the file to the remote machine
-                  $session = New-PSSession -ComputerName $pctarget -ErrorAction Stop
                   try {
                     $fileName = Split-Path $localPkgPath -Leaf
-                    $remoteDest = Join-Path "C:\Windows\Temp" $fileName
+                    $remoteSmbDest = "\\$pctarget\c$\Windows\Temp\$fileName"
+                    $remoteLocalDest = "C:\Windows\Temp\$fileName"
                                         
-                    Write-ApiLog "Copying $fileName to $pctarget..."
-                    Copy-Item -Path $localPkgPath -Destination $remoteDest -ToSession $session -ErrorAction Stop
+                    Write-ApiLog "Copying $fileName to $pctarget via SMB..."
+                    Copy-Item -Path $localPkgPath -Destination $remoteSmbDest -Force -ErrorAction Stop
                                         
-                    Write-ApiLog "Executing $fileName on $pctarget silently..."
-                    Invoke-Command -Session $session -ArgumentList $remoteDest -ScriptBlock {
-                      param($exePath)
-                      try {
-                        $process = Start-Process -FilePath $exePath -ArgumentList "/s /a /s /q /x" -Wait -PassThru -ErrorAction Stop
-                        if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
-                          "Success (Exit Code: $($process.ExitCode))"
-                        }
-                        else {
-                          "Failed with Exit Code: $($process.ExitCode)"
-                        }
-                      }
-                      catch {
-                        "Execute failed: $_"
-                      }
-                    } | ForEach-Object { Write-ApiLog "Deploy Result ($pctarget): $_" }
+                    Write-ApiLog "Executing $fileName on $pctarget via WMI..."
+                    $opt = New-CimSessionOption -Protocol Dcom
+                    $session = New-CimSession -ComputerName $pctarget -SessionOption $opt -ErrorAction Stop
+                    
+                    $commandLine = "$remoteLocalDest /s /a /s /q /x"
+                    $invokeResult = Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $commandLine } -ErrorAction Stop
+                    
+                    if ($invokeResult.ReturnValue -eq 0) {
+                      Write-ApiLog "Deploy Result ($pctarget): Process started successfully (PID: $($invokeResult.ProcessId)). Package is installing silently."
+                    }
+                    else {
+                      Write-ApiLog "Deploy Result ($pctarget): Failed to start process. WMI Return Value: $($invokeResult.ReturnValue)"
+                    }
                   }
                   catch {
                     Write-ApiLog "Deployment failed on $pctarget : $_"
                   }
                   finally {
-                    Remove-PSSession -Session $session
+                    if (Get-Variable -Name 'session' -ErrorAction SilentlyContinue) {
+                      Remove-CimSession -Session $session -ErrorAction SilentlyContinue
+                    }
                   }
                 }
                 Write-ApiLog "Completed deployment to $pctarget."
