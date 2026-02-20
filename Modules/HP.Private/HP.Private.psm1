@@ -16,7 +16,7 @@ Set-StrictMode -Version 3.0
 
 # CMSL is normally installed in C:\Program Files\WindowsPowerShell\Modules
 # but if installed via PSGallery and via PS7, it is installed in a different location
-if(Test-Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll") {
+if (Test-Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll") {
   Add-Type -Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll"
 }
 else {
@@ -48,13 +48,13 @@ function Get-HPPrivateReadINI {
   $name = $null
 
   # only allow https or file paths with or without file:// URL prefix
-  if ($file -and -not ($file.StartsWith("https://",$true,$null) -or [System.IO.File]::Exists($file) -or $file.StartsWith("file://",$true,$null))) {
+  if ($file -and -not ($file.StartsWith("https://", $true, $null) -or [System.IO.File]::Exists($file) -or $file.StartsWith("file://", $true, $null))) {
     throw [System.ArgumentException]"Only HTTPS or valid existing file paths are supported."
   }
 
 
   # if file starts with file:// or file:/// or file:////, remove the file URL prefix to just use the actual file path
-  if ($file.StartsWith("file://",$true,$null)) {
+  if ($file.StartsWith("file://", $true, $null)) {
     $file = $file.Substring(7)
   }
 
@@ -62,7 +62,7 @@ function Get-HPPrivateReadINI {
   $file = $file.TrimStart("/")
 
   try {
-    if ($file.StartsWith("https://",$true,$null)) {
+    if ($file.StartsWith("https://", $true, $null)) {
       Write-Verbose ("Reading network file: $file")
 
       [int]$retries = $maxRetries
@@ -116,7 +116,7 @@ function Get-HPPrivateReadINI {
             $section = "No-Section"
             $ini[$section] = @{}
           }
-          $name,$value = $matches[1..2]
+          $name, $value = $matches[1..2]
           if ($ini[$section][$name]) {
             if ($ini[$section][$name] -is [string]) {
               $ini[$section][$name] = @($ini[$section][$name])
@@ -171,7 +171,7 @@ function Get-HPPrivateReadINI {
 .NOTES
   - This is a private command for internal use only
 #>
-function Get-HPPrivateTemporaryFileName ($filename,[System.IO.DirectoryInfo]$cacheDir = [System.IO.Path]::GetTempPath() + "hp") {
+function Get-HPPrivateTemporaryFileName ($filename, [System.IO.DirectoryInfo]$cacheDir = [System.IO.Path]::GetTempPath() + "hp") {
   $cacheDir = Join-Path -Path $cacheDir -ChildPath $filename
   $cacheDir.FullName
 }
@@ -194,7 +194,7 @@ function Get-HPPrivateTemporaryFileName ($filename,[System.IO.DirectoryInfo]$cac
 function GetHPLockedStreamForWrite {
   [CmdletBinding()]
   [Alias('GetLockedStreamForWrite')]
-  param([string]$target,[int]$maxRetries = 10)
+  param([string]$target, [int]$maxRetries = 10)
 
   Write-Verbose "Opening exclusive access to file $target with maximum retries of $maxRetries"
   $lock_wait = $false
@@ -202,7 +202,7 @@ function GetHPLockedStreamForWrite {
   do {
     try {
       $lock_wait = $false
-      $result = New-Object -TypeName System.IO.FileStream -ArgumentList $target,Create,Write,None
+      $result = New-Object -TypeName System.IO.FileStream -ArgumentList $target, Create, Write, None
     }
     catch {
       Write-Verbose ("*******  $($_ | fl)")
@@ -238,7 +238,7 @@ function GetHPLockedStreamForWrite {
 function GetHPSharedFileInformation {
   [CmdletBinding()]
   [Alias('GetSharedFileInformation')]
-  param($file,[string]$mode,[switch]$wait,[int]$maxRetries,[switch]$progress,[switch]$skipSignatureCheck)
+  param($file, [string]$mode, [switch]$wait, [int]$maxRetries, [switch]$progress, [switch]$skipSignatureCheck)
 
   $return = $true
   $length = 0
@@ -257,12 +257,12 @@ function GetHPSharedFileInformation {
     }
     catch {
       Write-Verbose "Caught exception: $_.Message"
-      return (-1,$true,$skipSignatureCheck.IsPresent)
+      return (-1, $true, $skipSignatureCheck.IsPresent)
     }
 
     Write-Verbose ("Target file length on disk is $length bytes")
     try {
-      $fs = [System.IO.File]::Open($file,"Open",$mode)
+      $fs = [System.IO.File]::Open($file, "Open", $mode)
       $return = $true
       $fs.Close()
       $fs.Dispose()
@@ -278,9 +278,9 @@ function GetHPSharedFileInformation {
       }
       break
     }
-    catch [System.IO.FileNotFoundException]{
+    catch [System.IO.FileNotFoundException] {
       Write-Verbose "File not found: $_.Message"
-      return (-1,$true,$skipSignatureCheck.IsPresent)
+      return (-1, $true, $skipSignatureCheck.IsPresent)
     }
     catch {
       Write-Verbose "Internal error: $_.Message"
@@ -297,7 +297,7 @@ function GetHPSharedFileInformation {
       $maxRetries = $maxRetries - 1
     }
   } while ($maxRetries -gt 0)
-  ($length,$return,$sig)
+  ($length, $return, $sig)
 }
 
 
@@ -369,7 +369,7 @@ function Invoke-HPPrivateDownloadFile {
       $request = [System.Net.HttpWebRequest]::Create($uri)
       $request.set_Timeout(60000)
 
-      if ($request -is [System.Net.HttpWebRequest]){
+      if ($request -is [System.Net.HttpWebRequest]) {
         Write-Verbose "Setting user agent $userAgent in HttpWebRequest"
         $request.UserAgent = $userAgent
       }
@@ -385,7 +385,7 @@ function Invoke-HPPrivateDownloadFile {
         if ($retries -le 0) {
           throw "Query failed: $($_.Exception)"
         }
-        else{
+        else {
           Write-Verbose ("Query failed: $($_.Exception). Trying again.")
         }
         Start-Sleep 5
@@ -407,7 +407,7 @@ function Invoke-HPPrivateDownloadFile {
 
     # get file information if it exists to see if it contains the contents we want
     # and if file does not exist, continue on with the download as usual 
-    if(Test-Path -Path $target -PathType leaf){
+    if (Test-Path -Path $target -PathType leaf) {
       $r = GetHPSharedFileInformation -File $target -Mode "Read" -Wait -maxRetries $maxRetries -Progress:$progress -skipSignatureCheck:$skipSignatureCheck
       if ($noclobber -eq "skip") {
         if (($r[0] -eq $response.get_ContentLength()) -and ($r[2] -eq $true)) {
@@ -426,7 +426,7 @@ function Invoke-HPPrivateDownloadFile {
     $targetStream = GetHPLockedStreamForWrite -maxRetries $maxRetries -Target $target
    
     $buffer = New-Object byte[] 10KB
-    $count = $responseStream.Read($buffer,0,$buffer.Length)
+    $count = $responseStream.Read($buffer, 0, $buffer.Length)
     $downloadedBytes = $count
 
     #being too verbose with Write-Progress slows down the process
@@ -444,8 +444,8 @@ function Invoke-HPPrivateDownloadFile {
 
     $lastChunk = 0
     while ($count -gt 0) {
-      $targetStream.Write($buffer,0,$count)
-      $count = $responseStream.Read($buffer,0,$buffer.Length)
+      $targetStream.Write($buffer, 0, $count)
+      $count = $responseStream.Read($buffer, 0, $buffer.Length)
       $downloadedBytes = $downloadedBytes + $count
       $thisChunk = [System.Math]::Floor(($downloadedBytes / 100) / $totalLength)
 
@@ -462,7 +462,7 @@ function Invoke-HPPrivateDownloadFile {
       Write-Progress -Activity "Finished downloading file '$($url.split('/') | Select-Object -Last 1)'" -Completed
     }
   }
-  catch{
+  catch {
     throw ("Failed to download due to $($_.Exception)")
   }
   finally {
@@ -499,16 +499,16 @@ function Invoke-HPPrivateDownloadFile {
   - This is a private command for internal use only
 #>
 function Get-HPPrivateCurrentOs {
-    switch ([string][System.Environment]::OSVersion.Version.Major + "." + [string][System.Environment]::OSVersion.Version.Minor) {
-      "10.0" { $os = "win10" }
-      "6.3" { $os = "win81" }
-      "6.2" { $os = "win8" }
-      "6.1" { $os = "win7" }
-    }
-    if ([string][System.Environment]::OSVersion.Version.Build -ge 22000) {
-      $os = "win11"
-    }
-    return $os
+  switch ([string][System.Environment]::OSVersion.Version.Major + "." + [string][System.Environment]::OSVersion.Version.Minor) {
+    "10.0" { $os = "win10" }
+    "6.3" { $os = "win81" }
+    "6.2" { $os = "win8" }
+    "6.1" { $os = "win7" }
+  }
+  if ([string][System.Environment]::OSVersion.Version.Build -ge 22000) {
+    $os = "win11"
+  }
+  return $os
 }
 
 
@@ -524,8 +524,7 @@ function Get-HPPrivateCurrentOs {
 .NOTES
   - This is a private command for internal use only
 #>
-function Send-HPPrivateKMSRequest
-{
+function Send-HPPrivateKMSRequest {
   [CmdletBinding()]
   param(
     [string]$KMSUri,
@@ -538,7 +537,7 @@ function Send-HPPrivateKMSRequest
   $userAgent = Get-HPPrivateUserAgent
   $request = [System.Net.HttpWebRequest]::Create($KMSUri)
 
-  if ($request -is [System.Net.HttpWebRequest]){
+  if ($request -is [System.Net.HttpWebRequest]) {
     Write-Verbose "Setting user agent $userAgent in HttpWebRequest"
     $request.UserAgent = $userAgent
   }
@@ -547,13 +546,13 @@ function Send-HPPrivateKMSRequest
   $request.Timeout = -1
   $request.KeepAlive = $true
   $request.ReadWriteTimeout = -1
-  $request.Headers.Add("Authorization","Bearer $AccessToken")
+  $request.Headers.Add("Authorization", "Bearer $AccessToken")
   if ($JsonPayload) {
     $content = [System.Text.Encoding]::UTF8.GetBytes($JsonPayload)
     $request.ContentType = "application/json"
     $request.ContentLength = $content.Length
     $stream = $request.GetRequestStream()
-    $stream.Write($content,0,$content.Length)
+    $stream.Write($content, 0, $content.Length)
     $stream.Flush()
     $stream.Close()
   }
@@ -561,7 +560,7 @@ function Send-HPPrivateKMSRequest
   try {
     [System.Net.WebResponse]$response = $request.GetResponse()
   }
-  catch [System.Net.WebException]{
+  catch [System.Net.WebException] {
     Write-Verbose $_.Exception.Message
     $response = $_.Exception.Response
   }
@@ -577,7 +576,7 @@ function Send-HPPrivateKMSRequest
   }
 
   $response.Close()
-  return $statusDescription,$responseContent
+  return $statusDescription, $responseContent
 }
 
 
@@ -675,8 +674,7 @@ function Invoke-HPPrivateKMSErrorHandle {
 .EXAMPLE
   Test-HPWinPE
 #>
-function Test-HPWinPE
-{
+function Test-HPWinPE {
   [CmdletBinding()]
   [Alias('Test-WinPE')]
   param()
@@ -702,10 +700,12 @@ function Get-HPPrivateCurrentOsBitness {
   if ([environment]::Is64BitOperatingSystem -eq $true) {
     $output = systeminfo | findstr /C:"System Type"
 
-    if($output -match "ARM64-based PC") { # ARM64-based PC means ARM64
+    if ($output -match "ARM64-based PC") {
+      # ARM64-based PC means ARM64
       return "arm64"
     }
-    else { # x64-based PC means x64
+    else {
+      # x64-based PC means x64
       return 64 
     }
   }
@@ -750,11 +750,10 @@ function Get-HPPrivateUnicodePath {
 .NOTES
   - This is a private command for internal use only
 #>
-function Invoke-HPPostDownloadSoftpaqAction
-{
+function Invoke-HPPostDownloadSoftpaqAction {
   [CmdletBinding()]
   [Alias('Invoke-PostDownloadSoftpaqAction')]
-  param([string]$downloadedFile,[string]$action,[string]$number,$info,[string]$Destination, [SecureString]$password)
+  param([string]$downloadedFile, [string]$action, [string]$number, $info, [string]$Destination, [SecureString]$password)
 
   Write-Verbose 'Processing post-download action'
   $PostDownloadCmd = $null
@@ -767,18 +766,18 @@ function Invoke-HPPostDownloadSoftpaqAction
       }
 
       Write-Verbose -Message "Extracting $downloadedFile to: $Destination"
-      $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "-e -f `"$Destination`"","-s"
+      $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "-e -f `"$Destination`"", "-s"
       $result = $?
       Write-Verbose -Message "Extraction result: $result"
     }
     "install" {
       #$PostDownloadCmd = descendNodesAndGet  $info -field "install" 
-      if($Destination){
+      if ($Destination) {
         # the /f switch for SoftPaq executables = the runtime switch that 
         # overrides the default target path specified in build time 
         $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "/f `"$Destination`""
       }
-      else{
+      else {
         # default destination folder is C:\SWSetup\SP<$number>
         $output = Start-Process -Wait -PassThru "$downloadedFile"
       }
@@ -794,18 +793,18 @@ function Invoke-HPPostDownloadSoftpaqAction
       $passwordBinFile = $null
       Write-Verbose ("Checking if $PostDownloadCmd includes HpFirmwareUpdRec.exe")
 
-      if($PostDownloadCmd.Contains("HpFirmwareUpdRec.exe")){
+      if ($PostDownloadCmd.Contains("HpFirmwareUpdRec.exe")) {
         Write-Verbose ("BIOS FUR SoftPaq detected.")
         # if password is provided, create password file 
         # Write-HPFirmwarePasswordFile will throw an exception if there was an issue creating the password file
-        if($password){
+        if ($password) {
           Write-Verbose ("Password provided. Creating password file.")
-          try{
+          try {
             # convert secure string to plain text password
             $passwordPlainText = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))
             Write-HPFirmwarePasswordFile -Password $passwordPlainText 
           }
-          catch{
+          catch {
             # No need to check BIOS Update Credential Policy first because if Password is provided, CMSL should create a password file
             throw "CMSL failed to create a password file. Will not continue: $_"
           }
@@ -813,12 +812,12 @@ function Invoke-HPPostDownloadSoftpaqAction
           $passwordBinFile = Get-ChildItem -Path (Get-Location) -Filter "password.bin" -File 
 
           # Check to ensure password.bin file exists
-          if($passwordBinFile){
+          if ($passwordBinFile) {
             Write-Verbose ("Adding password to argument list: `"$($passwordBinFile.FullName)`"")
             $PostDownloadCmd += " -p '$($passwordBinFile.FullName)'"
             Write-Verbose ("PostDownloadCmd after adding password: $PostDownloadCmd")
           }
-          else{
+          else {
             # if password.bin file does not exist, we cannot continue with the silent install
             throw "CMSL failed to create a password file. Will not continue."
           }
@@ -828,14 +827,14 @@ function Invoke-HPPostDownloadSoftpaqAction
         }
       }
 
-      if($Destination){
+      if ($Destination) {
         # the /f switch for SoftPaq executables = the runtime switch that 
         # overrides the default target path specified in build time 
-        $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "-s","-e cmd.exe","/f `"$Destination`"","-a","/c $PostDownloadCmd"
+        $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "-s", "-e cmd.exe", "/f `"$Destination`"", "-a", "/c $PostDownloadCmd"
       }
-      else{
+      else {
         # default destination folder is C:\SWSetup\SP<$number>
-        $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "-s","-e cmd.exe","-a","/c $PostDownloadCmd"
+        $output = Start-Process -Wait -PassThru "$downloadedFile" -ArgumentList "-s", "-e cmd.exe", "-a", "/c $PostDownloadCmd"
       }
       $result = $?
       Write-Verbose -Message "Silent installation result: $result"
@@ -852,7 +851,7 @@ function Invoke-HPPostDownloadSoftpaqAction
       }
       
       # delete password file immediately after FUR SoftPaq is executed because FUR will handle password usage for firmware updates 
-      if($passwordBinFile){
+      if ($passwordBinFile) {
         Write-Verbose ("Deleting password file: $($passwordBinFile.FullName)")
         Remove-Item -Path $passwordBinFile.FullName -Force -ErrorAction Ignore
       }
@@ -937,16 +936,16 @@ function Get-HPPrivateCacheDirPath {
 function Get-HPPrivateCheckSignature {
   [CmdletBinding()]
   param(
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [string]$file,
 
-    [Parameter(Mandatory = $false,Position = 1)]
+    [Parameter(Mandatory = $false, Position = 1)]
     [string]$CVAfile = $null,
 
-    [Parameter(Mandatory = $false,Position = 2)]
+    [Parameter(Mandatory = $false, Position = 2)]
     [string]$signedBy = $null,
 
-    [Parameter(Mandatory = $false,Position = 3)]
+    [Parameter(Mandatory = $false, Position = 3)]
     [switch]$Progress
 
   )
@@ -1059,7 +1058,7 @@ function Invoke-HPPrivateDeleteCachedItem {
 function Invoke-HPPrivateSafeRemove {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory = $true,ValueFromPipelineByPropertyName = $true)] [string[]]$path,
+    [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true)] [string[]]$path,
     [Parameter(Mandatory = $false)] [switch]$recurse
   )
   foreach ($p in $path) {
@@ -1097,9 +1096,19 @@ function Invoke-HPPrivateExpandCAB {
   $result = New-Item -Force $target -ItemType Directory
   Write-Verbose "Created folder $result"
 
-  $shell = New-Object -ComObject "Shell.Application"
   $exception = $null
   try {
+    if ($IsWindows -eq $false -or ((Get-Variable IsWindows -ErrorAction SilentlyContinue) -and $IsWindows -eq $false) -or [System.Environment]::OSVersion.Platform -ne 'Win32NT') {
+      if (Get-Command "cabextract" -ErrorAction SilentlyContinue) {
+        cabextract -q -d $target $cab
+        return $target
+      }
+      else {
+        Write-Warning "cabextract is not installed on this system. Cannot expand $cab"
+        return $target
+      }
+    }
+    $shell = New-Object -ComObject "Shell.Application"
     if (!$?) { $(throw "unable to create $comObject object") }
     $sourceCab = $shell.Namespace($cab).items()
     $DestinationFolder = $shell.Namespace($target)
@@ -1109,7 +1118,9 @@ function Invoke-HPPrivateExpandCAB {
     $exception = $_.Exception
   }
   finally {
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$shell) | Out-Null
+    if ($shell) {
+      [System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$shell) | Out-Null
+    }
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
   }
@@ -1118,7 +1129,7 @@ function Invoke-HPPrivateExpandCAB {
     throw "Failed to decompress $cab. $($exception.Message)."
   }
 
-  if ($expectedFile){
+  if ($expectedFile) {
     
     $downloadedOk = Test-Path $expectedFile
     if ($downloadedOk -eq $false) {
@@ -1147,7 +1158,7 @@ function Invoke-HPPrivateExpandCAB {
 #>
 function Test-HPPrivateIsDownloadNeeded {
   [CmdletBinding()]
-  param([Parameter(Mandatory = $true)] $url,[Parameter(Mandatory = $true)] $file)
+  param([Parameter(Mandatory = $true)] $url, [Parameter(Mandatory = $true)] $file)
 
   Write-Verbose "Checking if we need a new copy of $file from $url"
 
@@ -1262,7 +1273,7 @@ function Test-HPPrivateIsValidXmlFile {
     $xml.Load($file)
     return $true
   }
-  catch [System.Xml.XmlException]{
+  catch [System.Xml.XmlException] {
     Write-Verbose "Invalid XML file $file"
     return $false
   }
@@ -1378,7 +1389,7 @@ function GetHPCurrentOSVer {
     $result = [string](Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name DisplayVersion | Select-Object DisplayVersion).DisplayVersion
 
     if ($result -match '[0-9]{2}[hH][0-9]') {
-      $bits = $result.substring(0,2)
+      $bits = $result.substring(0, 2)
       if ($bits -ge 21) {
         # for DisplayVersion >= 21XX, use the DisplayVersion as OSVer
         # convert OSVer to lower since the reference files have "21h1" in file name
@@ -1436,7 +1447,7 @@ function Get-HPPrivateCurrentDisplayOSVer {
 function validateHPWmiResult {
   [CmdletBinding()]
   [Alias('validateWmiResult')]
-  param([int]$code,[int]$category = 0xff)
+  param([int]$code, [int]$category = 0xff)
 
   Write-Verbose "Validating error code $code for facility $category"
   switch ($code) {
@@ -1466,7 +1477,7 @@ function validateHPWmiResult {
 function validateHPWmiResultInCategory {
   [CmdletBinding()]
   [Alias('validateWmiResultInCategory')]
-  param([int]$category,[int]$code)
+  param([int]$category, [int]$code)
 
   switch ($category) {
     1 {
@@ -1531,8 +1542,8 @@ function validateHPWmiResultInCategory {
 #>
 function Test-HPPrivateCustomResult {
   [CmdletBinding()]
-  param([int]$result,[int64]$mi_result,[int]$category)
-  Write-Verbose ("Checking result={0:x8}, mi_result={1:x8}, category={2:x4}" -f $result,$mi_result,$category)
+  param([int]$result, [int64]$mi_result, [int]$category)
+  Write-Verbose ("Checking result={0:x8}, mi_result={1:x8}, category={2:x4}" -f $result, $mi_result, $category)
   switch ($result) {
     0 { Write-Verbose ("Operation succeeded.") }
     0x80000711 { validateHPWmiResult -code $mi_result -Category $category } # E_DFM_FAILED_WITH_EXTENDED_ERROR
@@ -1580,9 +1591,9 @@ function Convert-HPPrivateObjectToBytes {
     Write-Verbose "Converting object of type $($obj.Gettype()) is $length bytes"
     $mem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($length)
 
-    [System.Runtime.InteropServices.Marshal]::StructureToPtr($obj,$mem,$true)
-    [System.Runtime.InteropServices.Marshal]::Copy($mem,$bytes,0,$length)
-    ($bytes,$length)
+    [System.Runtime.InteropServices.Marshal]::StructureToPtr($obj, $mem, $true)
+    [System.Runtime.InteropServices.Marshal]::Copy($mem, $bytes, 0, $length)
+    ($bytes, $length)
   }
   finally {
     # Free the memory we allocated for the struct value
@@ -1626,16 +1637,16 @@ function Get-HPPrivatePublicKeyCoalesce {
     $exponent = 0
     $mi_result = 0
 
-    if((Test-HPOSBitness) -eq 32){
-      $result = [X509Utilities]::get_public_key_from_pem32($efile,[ref]$modulus, [ref]$modulus_size, [ref]$exponent)
+    if ((Test-HPOSBitness) -eq 32) {
+      $result = [X509Utilities]::get_public_key_from_pem32($efile, [ref]$modulus, [ref]$modulus_size, [ref]$exponent)
     }
     else {
-      $result = [X509Utilities]::get_public_key_from_pem64($efile,[ref]$modulus, [ref]$modulus_size, [ref]$exponent)
+      $result = [X509Utilities]::get_public_key_from_pem64($efile, [ref]$modulus, [ref]$modulus_size, [ref]$exponent)
     }
 
     Test-HPPrivateCustomResult -result $result -mi_result $mi_result -Category 0x04
     New-Object -TypeName PSObject -Property @{
-      Modulus = $modulus.raw[0..($modulus_size - 1)]
+      Modulus  = $modulus.raw[0..($modulus_size - 1)]
       Exponent = $exponent
     }
 
@@ -1670,14 +1681,14 @@ function Get-HPPrivateX509CertCoalesce {
   )
   $param = @{}
   if ($password) {
-    $param.Add("Password",(ConvertTo-SecureString -AsPlainText -Force $password))
+    $param.Add("Password", (ConvertTo-SecureString -AsPlainText -Force $password))
   }
 
   if ($file) {
     $efile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($file)
 
     Write-Verbose "Coalescing to FILE certificate $efile"
-    $param.Add("FileName",$efile)
+    $param.Add("FileName", $efile)
     Get-HPPrivatePublicKeyCertificateFromPFX @param -Verbose:$VerbosePreference
   }
   else {
@@ -1687,10 +1698,10 @@ function Get-HPPrivateX509CertCoalesce {
     $mod_reversed = $parameters.Modulus
     [array]::Reverse($mod_reversed)
     New-Object -TypeName PSObject -Property @{
-      Full = $Cert
+      Full        = $Cert
       Certificate = $cert.Export('Cert')
-      Modulus = $mod_reversed
-      Exponent = $parameters.Exponent
+      Modulus     = $mod_reversed
+      Exponent    = $parameters.Exponent
     }
   }
 }
@@ -1713,10 +1724,10 @@ function Get-HPPrivateX509CertCoalesce {
 function Get-HPPrivatePublicKeyCertificateFromPFX {
   [CmdletBinding(DefaultParameterSetName = "FF")]
   param(
-    [Parameter(Mandatory = $true,Position = 0)]
+    [Parameter(Mandatory = $true, Position = 0)]
     [string]$FileName,
 
-    [Parameter(Mandatory = $false,Position = 1)]
+    [Parameter(Mandatory = $false, Position = 1)]
     [securestring]$Password
   )
 
@@ -1727,17 +1738,17 @@ function Get-HPPrivatePublicKeyCertificateFromPFX {
   Write-Verbose "Extracting public key from '$certfile'."
 
   try {
-    $cert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList ($certfile,$Password,'Exportable')
+    $cert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList ($certfile, $Password, 'Exportable')
     $key = $cert.PublicKey.Key
     $parameters = $key.ExportParameters($false);
 
     $mod_reversed = $parameters.Modulus
     [array]::Reverse($mod_reversed)
     New-Object -TypeName PSObject -Property @{
-      Full = $cert
+      Full        = $cert
       Certificate = $cert.Export('Cert')
-      Modulus = $mod_reversed
-      Exponent = $parameters.Exponent
+      Modulus     = $mod_reversed
+      Exponent    = $parameters.Exponent
     }
   }
   finally {
@@ -1772,11 +1783,11 @@ function Invoke-HPPrivateSignData {
     Write-Error "Please provide an exportable key in the PFX file"
   }
   $params = $privKey.ExportParameters($true)
-  $cspParams = New-Object System.Security.Cryptography.CspParameters (24,"Microsoft Enhanced RSA and AES Cryptographic Provider")
+  $cspParams = New-Object System.Security.Cryptography.CspParameters (24, "Microsoft Enhanced RSA and AES Cryptographic Provider")
   $enhancedSignCsp = New-Object System.Security.Cryptography.RSACryptoServiceProvider ($cspParams)
   $enhancedSignCsp.ImportParameters($params)
 
-  $result = $enhancedSignCsp.SignData($Data,[System.Security.Cryptography.HashAlgorithmName]::SHA256,[System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+  $result = $enhancedSignCsp.SignData($Data, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
   [array]::Reverse($result)
   return $result
 }
@@ -1797,8 +1808,8 @@ function Invoke-HPPrivateSignData {
 function Get-HPPrivateHash {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory = $true,Position = 0)] [byte[]]$data,
-    [Parameter(Mandatory = $false,Position = 1)] [string]$algo = "SHA256"
+    [Parameter(Mandatory = $true, Position = 0)] [byte[]]$data,
+    [Parameter(Mandatory = $false, Position = 1)] [string]$algo = "SHA256"
   )
   $cp = [System.Security.Cryptography.HashAlgorithm]::Create($algo)
   try {
@@ -1838,7 +1849,7 @@ function Get-HPPrivateOfflineCacheFiles {
   )
 
   $file = Get-HPPrivateTemporaryFileName -FileName $filename -cacheDir $cacheDirOffline
-  $filename = $filename.Replace("cab","xml")
+  $filename = $filename.Replace("cab", "xml")
   $downloadedFile = "$file.dir\$filename"
 
   Write-Verbose "Checking if $url is available locally."
@@ -1864,6 +1875,10 @@ function Get-HPPrivateOfflineCacheFiles {
     if (-not (Test-Path $downloadedFile) -or (-not (Test-HPPrivateIsValidXmlFile -File $downloadedFile))) {
       Write-Verbose "Extracting the data file and looking for $downloadedFile."
       $file = Invoke-HPPrivateExpandCAB -cab $file -expectedFile $downloadedFile
+    }
+    if (-not (Test-Path $downloadedFile)) {
+      Write-Warning "Failed to extract or locate $downloadedFile."
+      return $null
     }
   }
   return $downloadedFile
@@ -1894,7 +1909,7 @@ function Get-HPPrivateItemUrl (
 
   [string]$baseNumber = $number.ToString()
   [int]$last3Value = [int]($baseNumber.substring($baseNumber.Length - 3))
-  [int]$blockStart = [int]($baseNumber.substring(0,$baseNumber.Length - 3))
+  [int]$blockStart = [int]($baseNumber.substring(0, $baseNumber.Length - 3))
 
   [string]$block = ""
   [int]$blockEnd = $blockStart
@@ -1929,11 +1944,11 @@ function Get-HPPrivateItemUrl (
 .NOTES
   - This is a private command for internal use only
 #>
-function biosHPErrorCodesToString  {
+function biosHPErrorCodesToString {
   [CmdletBinding()]
   [Alias('biosErrorCodesToString')]
   param (
-    [Parameter(Mandatory = $true,Position = 0)]
+    [Parameter(Mandatory = $true, Position = 0)]
     [int]$code
   )
   
@@ -1973,9 +1988,9 @@ function getHPBiosSettingInterface {
   [CmdletBinding(DefaultParameterSetName = 'nNwSession')]
   [Alias('getBiosSettingInterface')]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [string]$Target = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $defaultAction = $ErrorActionPreference
@@ -1986,15 +2001,15 @@ function getHPBiosSettingInterface {
     Write-Verbose "Getting BIOS interface from '$target' for namespace '$ns'"
     $params = @{
       Namespace = $ns
-      Class = "HPBIOS_BIOSSettingInterface"
+      Class     = "HPBIOS_BIOSSettingInterface"
     }
 
     if ($CimSession) {
-      $params.Add("CimSession",$CimSession)
+      $params.Add("CimSession", $CimSession)
     }
 
     if ($Target -and ($target -ne ".") -and -not $CimSession) {
-      $params.Add("ComputerName",$Target)
+      $params.Add("ComputerName", $Target)
     }
 
 
@@ -2027,7 +2042,7 @@ function getHPNamespace {
   [CmdletBinding()]
   [Alias('getNamespace')]
   param()
-  [string]$c = [environment]::GetEnvironmentVariable("HP_BIOS_NAMESPACE","User")
+  [string]$c = [environment]::GetEnvironmentVariable("HP_BIOS_NAMESPACE", "User")
   if (-not $c) {
     return "root\HP\InstrumentedBIOS"
   }
@@ -2053,8 +2068,7 @@ function getHPNamespace {
 .NOTES
   - This is a private command for internal use only
 #>
-function Get-HPPrivateSecurePlatformIsProvisioned
-{
+function Get-HPPrivateSecurePlatformIsProvisioned {
   [boolean]$status = $false
 
   try {
@@ -2362,12 +2376,12 @@ function Get-HPPrivateSettingsFromXmlFile {
       $setting.Value = $item.Value
       if ("AuthString" -in $item.PSObject.Properties.Name) {
         # The XML parser adds an unwanted space in the tag BEAM
-        $setting.AuthString = $item.AuthString.InnerXml -replace "<BEAM />","<BEAM/>"
+        $setting.AuthString = $item.AuthString.InnerXml -replace "<BEAM />", "<BEAM/>"
       }
       $settingsList.Add($setting)
     }
   }
-  catch [System.Management.Automation.PropertyNotFoundException]{
+  catch [System.Management.Automation.PropertyNotFoundException] {
     throw [System.FormatException]'Invalid XML file.'
   }
 
@@ -2423,23 +2437,23 @@ function Get-HPPrivateSettingsFromFile {
 function Invoke-HPPrivateSetSetting {
   [CmdletBinding(DefaultParameterSetName = 'NewSession')]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 0, Mandatory = $true)]
     [SureAdminSetting]$Setting,
-    [Parameter(ParameterSetName = 'NewSession',Position = 1,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 1, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $false)]
     [string]$Password,
-    [Parameter(ParameterSetName = 'NewSession',Position = 2,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 2, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 2, Mandatory = $false)]
     $ErrorHandling = 0,
-    [Parameter(ParameterSetName = 'NewSession',Position = 3,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 3,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 3, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 3, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 4,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 4, Mandatory = $true)]
     [CimSession]$CimSession,
-    [Parameter(ParameterSetName = 'NewSession',Position = 5,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 5,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 5, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 5, Mandatory = $false)]
     [ref]$SingleSettingFailCounter
   )
   $readOnly = 0
@@ -2464,7 +2478,7 @@ function Invoke-HPPrivateSetSetting {
       1 { Write-Warning -Message "$err" }
       2 { Write-Verbose "Setting '$Setting.Name' could not be set, but ErrorHandling was set to 2 so error is quietly ignored" }
     }
-    return $readOnly,$notFound,$alreadySet,$SingleSettingFailCounter.Value
+    return $readOnly, $notFound, $alreadySet, $SingleSettingFailCounter.Value
   }
 
   if ($s) {
@@ -2503,7 +2517,7 @@ function Invoke-HPPrivateSetSetting {
     }
   }
 
-  return $readOnly,$notFound,$alreadySet,$SingleSettingFailCounter.Value
+  return $readOnly, $notFound, $alreadySet, $SingleSettingFailCounter.Value
 }
 
 
@@ -2596,8 +2610,8 @@ function Set-HPPrivateBIOSSetting {
     { $_ -eq 'HPBIOS_BIOSPassword' } {
       Write-Verbose "Setting Password setting '$Name' on '$ComputerName'"
       $Arguments = @{
-        Name = $Name
-        Value = "<utf-16/>" + [string]$Value
+        Name     = $Name
+        Value    = "<utf-16/>" + [string]$Value
         Password = $authorization
       }
       $r = Invoke-CimMethod -InputObject $c -MethodName SetBiosSetting -Arguments $Arguments
@@ -2606,8 +2620,8 @@ function Set-HPPrivateBIOSSetting {
     default {
       Write-Verbose "Setting HP BIOS Setting '$Name' to value '$Value' on '$ComputerName'"
       $Arguments = @{
-        Name = $Name
-        Value = [string]$Value
+        Name     = $Name
+        Value    = [string]$Value
         Password = $authorization;
       }
       $r = Invoke-CimMethod -InputObject $c -MethodName SetBiosSetting -Arguments $Arguments
@@ -2625,7 +2639,8 @@ function Set-HPPrivateBIOSSetting {
 
     $localCounterForSet++
 
-    if ($r.Return -eq 5) { # Invalid parameter
+    if ($r.Return -eq 5) {
+      # Invalid parameter
       Write-Host -ForegroundColor Magenta "Operation failed. Please make sure that you are passing a valid value."
       Write-Host -ForegroundColor Magenta "Some variable names or values may be case sensitive."
     }
@@ -2726,12 +2741,12 @@ function newHPCimSession () {
   $opts = New-CimSessionOption -Protocol $Protocol
 
   $params = @{
-    Name = $SessionName
+    Name               = $SessionName
     SkipTestConnection = $SkipTestConnection
-    SessionOption = $opts
+    SessionOption      = $opts
   }
   if ($Target -and ($Target -ne ".")) {
-    $params.Add("ComputerName",$target)
+    $params.Add("ComputerName", $target)
   }
   New-CimSession @params
 
@@ -2767,16 +2782,16 @@ function Set-HPPrivateBIOSSettingsList {
     $CimSession = newHPCimSession -Target $ComputerName
   }
 
-  $counter = @(0,0,0,0,0)
+  $counter = @(0, 0, 0, 0, 0)
   foreach ($setting in $SettingsList) {
     $counter[0]++
     $refParameter = 0
 
     $params = @{
-      Setting = $setting
-      ErrorHandling = $ErrorHandling
-      CimSession = $CimSession
-      Password = $Password
+      Setting                  = $setting
+      ErrorHandling            = $ErrorHandling
+      CimSession               = $CimSession
+      Password                 = $Password
       SingleSettingFailCounter = [ref]$refParameter
     }
 
@@ -2820,7 +2835,7 @@ function Set-HPPrivateBIOSSettingsList {
 function Set-HPPrivateBIOSSettingsListPayload {
   [CmdletBinding()]
   param(
-    [Parameter(ParameterSetName = 'Payload',Position = 0,Mandatory = $true,ValueFromPipeline = $true)]
+    [Parameter(ParameterSetName = 'Payload', Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
     [string]$Payload,
     $ErrorHandling = 2
   )
@@ -2828,7 +2843,7 @@ function Set-HPPrivateBIOSSettingsListPayload {
   [System.Collections.Generic.List[SureAdminSetting]]$settingsList = Get-HPPrivateSettingsFromPayload -Content $Payload
 
   $params = @{
-    SettingsList = $settingsList
+    SettingsList  = $settingsList
     ErrorHandling = $ErrorHandling
   }
   Set-HPPrivateBIOSSettingsList @params -Verbose:$VerbosePreference
@@ -2840,7 +2855,7 @@ function Set-HPPrivateBIOSSettingsListPayload {
 function Test-HPAuthRequired {
   [CmdletBinding()]
   param(
-    [ValidateSet("Upgrade","Downgrade")]
+    [ValidateSet("Upgrade", "Downgrade")]
     [string]$BiosUpdateType = "Upgrade"
   )
 
@@ -2849,7 +2864,7 @@ function Test-HPAuthRequired {
     return $false
   }
 
-  if($BiosUpdateType -eq "Downgrade") {
+  if ($BiosUpdateType -eq "Downgrade") {
     try {
       Write-Verbose "Checking if authentication is required for downgrade"
       $mi_result = 0
@@ -2859,12 +2874,12 @@ function Test-HPAuthRequired {
       }
       Test-HPPrivateCustomResult -result 0x80000711 -Category 0x02 -mi_result $mi_result
     }
-    catch [System.Management.Automation.MethodInvocationException]
-    {
+    catch [System.Management.Automation.MethodInvocationException] {
       throw "Could not find support library: $($_.Exception.Message)"
     }
   }
-  else { # Upgrade
+  else {
+    # Upgrade
     try {
       Write-Verbose "Checking if authentication is required for upgrade"
       $mi_result = 0
@@ -2874,8 +2889,7 @@ function Test-HPAuthRequired {
       }
       Test-HPPrivateCustomResult -result 0x80000711 -Category 0x02 -mi_result $mi_result
     }
-    catch [System.Management.Automation.MethodInvocationException]
-    {
+    catch [System.Management.Automation.MethodInvocationException] {
       throw "Could not find support library: $($_.Exception.Message)"
     }
   }

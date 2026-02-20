@@ -20,7 +20,7 @@ Set-StrictMode -Version 3.0
 if (Test-Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll") {
   Add-Type -Path "$PSScriptRoot\..\HP.Private\HP.CMSLHelper.dll"
 }
-else{
+else {
   Add-Type -Path "$PSScriptRoot\..\..\HP.Private\1.8.5\HP.CMSLHelper.dll"
 }
 
@@ -57,19 +57,19 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   Get-HPBIOSSetting -Name "Serial Number" -Format BCU
 #>
 function Get-HPBIOSSetting {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSetting")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSetting")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 0, Mandatory = $true)]
     $Name,
-    [Parameter(ParameterSetName = 'NewSession',Position = 1,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $false)]
-    [ValidateSet('XML','JSON','BCU','CSV')]
+    [Parameter(ParameterSetName = 'NewSession', Position = 1, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $false)]
+    [ValidateSet('XML', 'JSON', 'BCU', 'CSV')]
     $Format,
-    [Parameter(ParameterSetName = 'NewSession',Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 2, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 3,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 3, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -78,9 +78,9 @@ function Get-HPBIOSSetting {
   $result = $null
 
   $params = @{
-    Class = "HP_BIOSSetting"
+    Class     = "HP_BIOSSetting"
     Namespace = $ns
-    Filter = "Name='$name'"
+    Filter    = "Name='$name'"
   }
 
   if ($PSCmdlet.ParameterSetName -eq 'NewSession') {
@@ -92,10 +92,9 @@ function Get-HPBIOSSetting {
 
   try {
     $result = Get-CimInstance @params -ErrorAction stop
-  } catch [Microsoft.Management.Infrastructure.CimException]
-  {
-    if ($_.Exception.Message.trim() -eq "Access denied")
-    {
+  }
+  catch [Microsoft.Management.Infrastructure.CimException] {
+    if ($_.Exception.Message.trim() -eq "Access denied") {
       throw [System.UnauthorizedAccessException]"Access denied: Please ensure you have the rights to perform this operation."
     }
     throw [System.NotSupportedException]"$($_.Exception.Message): Please ensure this is a supported HP device."
@@ -136,12 +135,12 @@ function Get-HPBIOSSetting {
   Get-HPDeviceUUID
 #>
 function Get-HPDeviceUUID () {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceUUID")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceUUID")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -173,12 +172,12 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   Get-HPBIOSUUID
 #>
 function Get-HPBIOSUUID {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSUUID")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSUUID")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -192,10 +191,10 @@ function Get-HPBIOSUUID {
   }
   else {
     $raw = ([guid]::new($obj.Value)).ToByteArray()
-    $raw[0],$raw[3] = $raw[3],$raw[0]
-    $raw[1],$raw[2] = $raw[2],$raw[1]
-    $raw[4],$raw[5] = $raw[5],$raw[4]
-    $raw[6],$raw[7] = $raw[7],$raw[6]
+    $raw[0], $raw[3] = $raw[3], $raw[0]
+    $raw[1], $raw[2] = $raw[2], $raw[1]
+    $raw[4], $raw[5] = $raw[5], $raw[4]
+    $raw[6], $raw[7] = $raw[7], $raw[6]
     return ([guid]::new($raw)).ToString().ToUpper().trim()
   }
 }
@@ -222,16 +221,16 @@ function Get-HPBIOSUUID {
   Get-HPBIOSVersion
 #>
 function Get-HPBIOSVersion {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSVersion")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSVersion")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 0, Mandatory = $false)]
     [switch]$IncludeFamily,
-    [Parameter(ParameterSetName = 'NewSession',Position = 1,Mandatory = $false)]
-    [Parameter(Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 1, Mandatory = $false)]
+    [Parameter(Position = 1, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 2,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 2, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -288,12 +287,12 @@ Specifies a pre-established CIMSession object (as created by the [New-CIMSession
   Get-HPBIOSAuthor
 #>
 function Get-HPBIOSAuthor {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSAuthor")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSAuthor")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -325,12 +324,12 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   Get-HPDeviceManufacturer
 #>
 function Get-HPDeviceManufacturer {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceManufacturer")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceManufacturer")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -361,12 +360,12 @@ Specifies a pre-established CIMSession object (as created by the [New-CIMSession
   Get-HPDeviceSerialNumber
 #>
 function Get-HPDeviceSerialNumber {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceSerialNumber")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceSerialNumber")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -398,12 +397,12 @@ Specifies a pre-established CIMSession object (as created by the [New-CIMSession
   Get-HPDeviceModel
 #>
 function Get-HPDeviceModel {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceModel")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceModel")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -439,12 +438,12 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   Get-HPDevicePartNumber
 #>
 function Get-HPDevicePartNumber {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDevicePartNumber")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDevicePartNumber")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -478,12 +477,12 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   Get-HPDeviceProductID
 #>
 function Get-HPDeviceProductID {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceProductID")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceProductID")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -517,12 +516,12 @@ function Get-HPDeviceProductID {
   Get-HPDeviceAssetTag
 #>
 function Get-HPDeviceAssetTag {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceAssetTag")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceAssetTag")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -561,15 +560,15 @@ function Get-HPDeviceAssetTag {
   Get-HPBIOSSettingValue -Name 'Asset Tracking Number'
 #>
 function Get-HPBIOSSettingValue {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSettingValue")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSettingValue")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 0, Mandatory = $true)]
     [string]$Name,
-    [Parameter(ParameterSetName = 'NewSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 1, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 2, Mandatory = $false)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -625,21 +624,21 @@ function Get-HPBIOSSettingValue {
   - Requires HP BIOS.
 #>
 function Get-HPBIOSSettingsList {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSettingsList")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSettingsList")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 0,Mandatory = $false)]
-    [Parameter(Position = 0,Mandatory = $false)]
-    [ValidateSet('XML','JSON','BCU','CSV','brief')]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 0, Mandatory = $false)]
+    [Parameter(Position = 0, Mandatory = $false)]
+    [ValidateSet('XML', 'JSON', 'BCU', 'CSV', 'brief')]
     [string]$Format,
-    [Parameter(ParameterSetName = 'NewSession',Position = 1,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $false)]
-    [Parameter(Position = 1,Mandatory = $false)] [switch]$NoReadonly,
-    [Parameter(ParameterSetName = 'NewSession',Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 1, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $false)]
+    [Parameter(Position = 1, Mandatory = $false)] [switch]$NoReadonly,
+    [Parameter(ParameterSetName = 'NewSession', Position = 2, Mandatory = $false)]
     [Alias('Target')]
-    [Parameter(Position = 2,Mandatory = $false)] [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 3,Mandatory = $false)]
-    [Parameter(Position = 3,Mandatory = $false)] [CimSession]$CimSession
+    [Parameter(Position = 2, Mandatory = $false)] [string]$ComputerName = ".",
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 3, Mandatory = $false)]
+    [Parameter(Position = 3, Mandatory = $false)] [CimSession]$CimSession
   )
   $ns = getHPNamespace
 
@@ -655,9 +654,8 @@ function Get-HPBIOSSettingsList {
   try {
     $cs = Get-CimInstance @params -ErrorAction stop
   }
-  catch [Microsoft.Management.Infrastructure.CimException]{
-    if ($_.Exception.Message.trim() -eq "Access denied")
-    {
+  catch [Microsoft.Management.Infrastructure.CimException] {
+    if ($_.Exception.Message.trim() -eq "Access denied") {
       throw [System.UnauthorizedAccessException]"Access denied: Please ensure you have the rights to perform this operation."
     }
     throw [System.NotSupportedException]"$($_.Exception.Message): Please ensure this is a supported HP device."
@@ -772,7 +770,7 @@ function Get-HPBIOSSettingsList {
 #>
 function Set-HPPrivateBIOSSettingValuePayload {
   param(
-    [Parameter(ParameterSetName = 'Payload',Position = 0,Mandatory = $true,ValueFromPipeline = $true)]
+    [Parameter(ParameterSetName = 'Payload', Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
     [string]$Payload
   )
 
@@ -822,31 +820,31 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   Set-HPBIOSSettingValue -Name "Asset Tracking Number" -Value "Hello World" -password 's3cr3t'
 #>
 function Set-HPBIOSSettingValue {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSSettingValue")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSSettingValue")]
   param(
-    [Parameter(ParameterSetName = "NewSession",Position = 0,Mandatory = $false)]
-    [Parameter(ParameterSetName = "ReuseSession",Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NewSession", Position = 0, Mandatory = $false)]
+    [Parameter(ParameterSetName = "ReuseSession", Position = 0, Mandatory = $false)]
     [AllowEmptyString()]
     [string]$Password,
 
-    [Parameter(ParameterSetName = "NewSession",Position = 1,Mandatory = $true)]
-    [Parameter(ParameterSetName = "ReuseSession",Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = "NewSession", Position = 1, Mandatory = $true)]
+    [Parameter(ParameterSetName = "ReuseSession", Position = 1, Mandatory = $true)]
     [string]$Name,
 
-    [Parameter(ParameterSetName = "NewSession",Position = 2,Mandatory = $true)]
-    [Parameter(ParameterSetName = "ReuseSession",Position = 2,Mandatory = $true)]
+    [Parameter(ParameterSetName = "NewSession", Position = 2, Mandatory = $true)]
+    [Parameter(ParameterSetName = "ReuseSession", Position = 2, Mandatory = $true)]
     [AllowEmptyString()]
     [string]$Value,
 
-    [Parameter(ParameterSetName = "NewSession",Position = 3,Mandatory = $false)]
-    [Parameter(ParameterSetName = "ReuseSession",Position = 3,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NewSession", Position = 3, Mandatory = $false)]
+    [Parameter(ParameterSetName = "ReuseSession", Position = 3, Mandatory = $false)]
     [switch]$SkipPrecheck,
 
-    [Parameter(ParameterSetName = 'NewSession',Position = 4,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 4, Mandatory = $false)]
     [Alias('Target')]
     $ComputerName = ".",
 
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 4,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 4, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -855,9 +853,9 @@ function Set-HPBIOSSettingValue {
   $setting.Value = $Value
 
   $params = @{
-    Setting = $setting
-    Password = $Password
-    CimSession = $CimSession
+    Setting      = $setting
+    Password     = $Password
+    CimSession   = $CimSession
     ComputerName = $ComputerName
     SkipPrecheck = $SkipPrecheck
   }
@@ -891,12 +889,12 @@ function Set-HPBIOSSettingValue {
   [Get-HPBIOSSetupPasswordIsSet](https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSetupPasswordIsSet)
 #>
 function Get-HPBIOSSetupPasswordIsSet () {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSetupPasswordIsSet")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSetupPasswordIsSet")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
 
   )
@@ -943,22 +941,22 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   - Multiple attempts to change the password with an incorrect existing password may trigger BIOS lockout mode, which can be cleared by rebooting the system.
 #>
 function Set-HPBIOSSetupPassword {
-  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/set-HPBIOSSetupPassword")]
+  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/set-HPBIOSSetupPassword")]
   param(
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 0, Mandatory = $true)]
     [string]$NewPassword,
 
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 1,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 1, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 1, Mandatory = $false)]
     [string]$Password,
 
 
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 2, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
 
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 3,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 3, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{}
@@ -975,9 +973,9 @@ function Set-HPBIOSSetupPassword {
   $iface = getHPBiosSettingInterface @params
 
   $r = $iface | Invoke-CimMethod -ErrorAction Stop -MethodName 'SetBIOSSetting' -Arguments @{
-    Name = $settingName
+    Name     = $settingName
     Password = '<utf-16/>' + $Password
-    Value = '<utf-16/>' + $newPassword
+    Value    = '<utf-16/>' + $newPassword
   }
 
   if ($r.Return -ne 0) {
@@ -1018,16 +1016,16 @@ Specifies a pre-established CIMSession object (as created by the [New-CIMSession
   [Get-HPBIOSSetupPasswordIsSet](https://developers.hp.com/hp-client-management/doc/Get-HPBIOSSetupPasswordIsSet)
 #>
 function Clear-HPBIOSSetupPassword {
-  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Clear-HPBIOSSetupPassword")]
+  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Clear-HPBIOSSetupPassword")]
   param(
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 0, Mandatory = $true)]
     [string]$Password,
 
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 1, Mandatory = $false)]
     [Alias('Target')]
     $ComputerName = ".",
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 2,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 2, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $settingName = 'Setup Password'
@@ -1073,12 +1071,12 @@ Specifies a target computer for this command to create its own one-time-use CIMS
   [Clear-HPBIOSPowerOnPassword](https://developers.hp.com/hp-client-management/doc/Clear-HPBIOSPowerOnPassword)
 #>
 function Get-HPBIOSPowerOnPasswordIsSet () {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSPowerOnPasswordIsSet")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSPowerOnPasswordIsSet")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
 
   )
@@ -1126,19 +1124,19 @@ Specifies a target computer for this command to create its own one-time-use CIMS
 
 #>
 function Set-HPBIOSPowerOnPassword {
-  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSPowerOnPassword")]
+  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSPowerOnPassword")]
   param(
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 0, Mandatory = $true)]
     [string]$NewPassword,
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 1,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 1, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 1, Mandatory = $false)]
     [string]$Password,
 
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 3,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 3, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 4,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 4, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $settingName = 'Power-On Password'
@@ -1191,17 +1189,17 @@ function Set-HPBIOSPowerOnPassword {
 
 #>
 function Clear-HPBIOSPowerOnPassword {
-  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Clear-HPBIOSPowerOnPassword")]
+  [CmdletBinding(DefaultParameterSetName = 'NoPassthruNewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Clear-HPBIOSPowerOnPassword")]
   param(
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 0,Mandatory = $false)]
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 0, Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 0, Mandatory = $false)]
     [string]$Password,
 
 
-    [Parameter(ParameterSetName = 'NoPassthruNewSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NoPassthruNewSession', Position = 1, Mandatory = $false)]
     [Alias('Target')]
     $ComputerName = ".",
-    [Parameter(ParameterSetName = 'NoPassthruReuseSession',Position = 2,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'NoPassthruReuseSession', Position = 2, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -1214,8 +1212,8 @@ function Clear-HPBIOSPowerOnPassword {
 
   $iface = getHPBiosSettingInterface @params
   $r = $iface | Invoke-CimMethod -MethodName SetBiosSetting -Arguments @{
-    Name = "Power-On Password"
-    Value = "<utf-16/>"
+    Name     = "Power-On Password"
+    Value    = "<utf-16/>"
     Password = ("<utf-16/>" + $Password)
   }
   if ($r.Return -ne 0) {
@@ -1273,32 +1271,32 @@ function Set-HPBIOSSettingValuesFromFile {
   [CmdletBinding(DefaultParameterSetName = "NotPassThruNewSession",
     HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSSettingValuesFromFile")]
   param(
-    [Parameter(ParameterSetName = "NotPassThruNewSession",Position = 0,Mandatory = $true)]
-    [Parameter(ParameterSetName = "NotPassThruReuseSession",Position = 0,Mandatory = $true)]
+    [Parameter(ParameterSetName = "NotPassThruNewSession", Position = 0, Mandatory = $true)]
+    [Parameter(ParameterSetName = "NotPassThruReuseSession", Position = 0, Mandatory = $true)]
     [System.IO.FileInfo]$File,
 
-    [Parameter(ParameterSetName = "NotPassThruNewSession",Position = 1,Mandatory = $false)]
-    [Parameter(ParameterSetName = "NotPassThruReuseSession",Position = 1,Mandatory = $false)]
-    [ValidateSet('XML','JSON','BCU','CSV')]
+    [Parameter(ParameterSetName = "NotPassThruNewSession", Position = 1, Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruReuseSession", Position = 1, Mandatory = $false)]
+    [ValidateSet('XML', 'JSON', 'BCU', 'CSV')]
     [string]$Format = $null,
 
-    [Parameter(ParameterSetName = "NotPassThruNewSession",Position = 2,Mandatory = $false)]
-    [Parameter(ParameterSetName = "NotPassThruReuseSession",Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruNewSession", Position = 2, Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruReuseSession", Position = 2, Mandatory = $false)]
     [string]$Password,
 
-    [Parameter(ParameterSetName = "NotPassThruNewSession",Position = 3,Mandatory = $false)]
-    [Parameter(ParameterSetName = "NotPassThruReuseSession",Position = 3,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruNewSession", Position = 3, Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruReuseSession", Position = 3, Mandatory = $false)]
     [switch]$NoSummary,
 
-    [Parameter(ParameterSetName = "NotPassThruNewSession",Position = 4,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruNewSession", Position = 4, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
 
-    [Parameter(ParameterSetName = "NotPassThruNewSession",Position = 5,Mandatory = $false)]
-    [Parameter(ParameterSetName = "NotPassThruReuseSession",Position = 5,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruNewSession", Position = 5, Mandatory = $false)]
+    [Parameter(ParameterSetName = "NotPassThruReuseSession", Position = 5, Mandatory = $false)]
     $ErrorHandling = 2,
 
-    [Parameter(ParameterSetName = "NotPassThruReuseSession",Position = 6,Mandatory = $true)]
+    [Parameter(ParameterSetName = "NotPassThruReuseSession", Position = 6, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -1311,12 +1309,12 @@ function Set-HPBIOSSettingValuesFromFile {
   [System.Collections.Generic.List[SureAdminSetting]]$settingsList = Get-HPPrivateSettingsFromFile -FileName $File -Format $Format
 
   $params = @{
-    SettingsList = $settingsList
+    SettingsList  = $settingsList
     ErrorHandling = $ErrorHandling
-    ComputerName = $ComputerName
-    CimSession = $CimSession
-    Password = $Password
-    NoSummary = $NoSummary
+    ComputerName  = $ComputerName
+    CimSession    = $CimSession
+    Password      = $Password
+    NoSummary     = $NoSummary
   }
   Set-HPPrivateBIOSSettingsList @params -Verbose:$VerbosePreference
 }
@@ -1347,18 +1345,18 @@ function Set-HPBIOSSettingValuesFromFile {
 
 #>
 function Set-HPBIOSSettingDefaults {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSSettingDefaults")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Set-HPBIOSSettingDefaults")]
   param(
-    [Parameter(ParameterSetName = "NewSession",Position = 0,Mandatory = $false)]
-    [Parameter(ParameterSetName = "ReuseSession",Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = "NewSession", Position = 0, Mandatory = $false)]
+    [Parameter(ParameterSetName = "ReuseSession", Position = 0, Mandatory = $false)]
     [AllowEmptyString()]
     [string]$Password,
 
-    [Parameter(ParameterSetName = 'NewSession',Position = 1,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 1, Mandatory = $false)]
     [Alias('Target')]
     $ComputerName = ".",
 
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 2,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 2, Mandatory = $true)]
     [CimSession]$CimSession
   )
 
@@ -1405,7 +1403,7 @@ function Set-HPPrivateBIOSSettingDefaultsAuthorization {
 #>
 function Set-HPPrivateBIOSSettingDefaultsPayload {
   param(
-    [Parameter(ParameterSetName = 'Payload',Position = 0,Mandatory = $true,ValueFromPipeline = $true)]
+    [Parameter(ParameterSetName = 'Payload', Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
     [string]$Payload
   )
 
@@ -1439,12 +1437,12 @@ function Set-HPPrivateBIOSSettingDefaultsPayload {
 
 #>
 function Get-HPDeviceUptime {
-  [CmdletBinding(DefaultParameterSetName = 'NewSession',HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceUptime")]
+  [CmdletBinding(DefaultParameterSetName = 'NewSession', HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPDeviceUptime")]
   param(
-    [Parameter(ParameterSetName = 'NewSession',Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'NewSession', Position = 0, Mandatory = $false)]
     [Alias('Target')]
     [string]$ComputerName = ".",
-    [Parameter(ParameterSetName = 'ReuseSession',Position = 1,Mandatory = $true)]
+    [Parameter(ParameterSetName = 'ReuseSession', Position = 1, Mandatory = $true)]
     [CimSession]$CimSession
   )
   $params = @{
@@ -1616,82 +1614,82 @@ function Get-HPBIOSUpdates {
   [CmdletBinding(DefaultParameterSetName = "ViewSet",
     HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSUpdates")]
   param(
-    [Parameter(ParameterSetName = "DownloadSet",Position = 0,Mandatory = $false)]
-    [Parameter(ParameterSetName = "ViewSet",Position = 0,Mandatory = $false)]
-    [Parameter(Position = 0,Mandatory = $false)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 0, Mandatory = $false)]
+    [Parameter(ParameterSetName = "ViewSet", Position = 0, Mandatory = $false)]
+    [Parameter(Position = 0, Mandatory = $false)]
     [ValidatePattern("^[a-fA-F0-9]{4}$")]
     [string]$Platform,
 
-    [ValidateSet('XML','JSON','CSV','List')]
-    [Parameter(ParameterSetName = "ViewSet",Position = 1,Mandatory = $false)]
+    [ValidateSet('XML', 'JSON', 'CSV', 'List')]
+    [Parameter(ParameterSetName = "ViewSet", Position = 1, Mandatory = $false)]
     [string]$Format,
 
-    [Parameter(ParameterSetName = "ViewSet",Position = 2,Mandatory = $false)]
+    [Parameter(ParameterSetName = "ViewSet", Position = 2, Mandatory = $false)]
     [switch]$Latest,
 
-    [Parameter(ParameterSetName = "CheckSet",Position = 3,Mandatory = $false)]
+    [Parameter(ParameterSetName = "CheckSet", Position = 3, Mandatory = $false)]
     [switch]$Check,
 
-    [Parameter(ParameterSetName = "FlashSetPassword",Position = 4,Mandatory = $false)]
-    [Parameter(ParameterSetName = "DownloadSet",Position = 4,Mandatory = $false)]
-    [Parameter(ParameterSetName = "ViewSet",Position = 4,Mandatory = $false)]
+    [Parameter(ParameterSetName = "FlashSetPassword", Position = 4, Mandatory = $false)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 4, Mandatory = $false)]
+    [Parameter(ParameterSetName = "ViewSet", Position = 4, Mandatory = $false)]
     [string]$Target = ".",
 
-    [Parameter(ParameterSetName = "ViewSet",Position = 5,Mandatory = $false)]
+    [Parameter(ParameterSetName = "ViewSet", Position = 5, Mandatory = $false)]
     [switch]$All,
 
-    [Parameter(ParameterSetName = "DownloadSet",Position = 6,Mandatory = $true)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 6, Mandatory = $true)]
     [switch]$Download,
 
-    [Parameter(ParameterSetName = "FlashSetPassword",Position = 7,Mandatory = $true)]
+    [Parameter(ParameterSetName = "FlashSetPassword", Position = 7, Mandatory = $true)]
     [switch]$Flash,
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 8,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 8, Mandatory = $false)]
     [string]$Password,
 
-    [Parameter(ParameterSetName = "FlashSetPassword",Position = 9,Mandatory = $false)]
-    [Parameter(ParameterSetName = "DownloadSet",Position = 9,Mandatory = $false)]
+    [Parameter(ParameterSetName = "FlashSetPassword", Position = 9, Mandatory = $false)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 9, Mandatory = $false)]
     [string]$Version,
 
-    [Parameter(ParameterSetName = "FlashSetPassword",Position = 10,Mandatory = $false)]
-    [Parameter(ParameterSetName = "DownloadSet",Position = 10,Mandatory = $false)]
+    [Parameter(ParameterSetName = "FlashSetPassword", Position = 10, Mandatory = $false)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 10, Mandatory = $false)]
     [string]$SaveAs,
 
-    [Parameter(ParameterSetName = "FlashSetPassword",Position = 11,Mandatory = $false)]
-    [Parameter(ParameterSetName = "DownloadSet",Position = 11,Mandatory = $false)]
+    [Parameter(ParameterSetName = "FlashSetPassword", Position = 11, Mandatory = $false)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 11, Mandatory = $false)]
     [switch]$Quiet,
 
-    [Parameter(ParameterSetName = "FlashSetPassword",Position = 12,Mandatory = $false)]
-    [Parameter(ParameterSetName = "DownloadSet",Position = 12,Mandatory = $false)]
+    [Parameter(ParameterSetName = "FlashSetPassword", Position = 12, Mandatory = $false)]
+    [Parameter(ParameterSetName = "DownloadSet", Position = 12, Mandatory = $false)]
     [switch]$Overwrite,
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 13,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 13, Mandatory = $false)]
     [switch]$Yes,
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 14,Mandatory = $false)]
-    [ValidateSet('Stop','Ignore','Suspend')]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 14, Mandatory = $false)]
+    [ValidateSet('Stop', 'Ignore', 'Suspend')]
     [string]$BitLocker = 'Stop',
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 15,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 15, Mandatory = $false)]
     [switch]$Force,
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 16,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 16, Mandatory = $false)]
     [string]$Url = "https://ftp.hp.com/pub/pcbios",
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 17,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 17, Mandatory = $false)]
     [switch]$Offline,
 
-    [Parameter(ParameterSetName = 'FlashSetPassword',Position = 18,Mandatory = $false)]
+    [Parameter(ParameterSetName = 'FlashSetPassword', Position = 18, Mandatory = $false)]
     [switch]$NoWait
   )
 
-  if($PSCmdlet.ParameterSetName -eq "FlashSetPassword"){
+  if ($PSCmdlet.ParameterSetName -eq "FlashSetPassword") {
     # check for elevated admin now, check for Sure Admin later
     Test-HPFirmwareFlashSupported -CheckPlatform
   }
 
   # only allow https or file paths with or without file:// URL prefix
-  if ($Url -and -not ($Url.StartsWith("https://",$true,$null) -or [System.IO.Directory]::Exists($Url) -or $Url.StartsWith("file://",$true,$null))) {
+  if ($Url -and -not ($Url.StartsWith("https://", $true, $null) -or [System.IO.Directory]::Exists($Url) -or $Url.StartsWith("file://", $true, $null))) {
     throw [System.ArgumentException]"Only HTTPS or valid existing directory paths are supported."
   }
 
@@ -1716,7 +1714,7 @@ function Get-HPBIOSUpdates {
     # checking 404 based on exception message 
     # bc PS5 throws WebException while PS7 throws httpResponseException 
     # bc PS5 is based on WebRequest while PS7 is based on HttpClient
-    if ($_.Exception.Message.contains("(404) Not Found") -or $_.Exception.Message.contains("404 (Not Found)")){
+    if ($_.Exception.Message.contains("(404) Not Found") -or $_.Exception.Message.contains("404 (Not Found)")) {
       throw [System.Management.Automation.ItemNotFoundException]"Unable to retrieve BIOS data for a platform with ID $platform (data file not found)."
     }
 
@@ -1732,8 +1730,7 @@ function Get-HPBIOSUpdates {
   }
 
   # in the case that the xml file is empty, or the xml file is not in the expected format i.e. no Rel entries, we will catch it here
-  if ((-not $doc) -or (-not (Get-Member -InputObject $doc -Type Property -Name "BIOS")) -or (-not (Get-Member -InputObject $doc.bios -Type Property -Name "Rel")))
-  {
+  if ((-not $doc) -or (-not (Get-Member -InputObject $doc -Type Property -Name "BIOS")) -or (-not (Get-Member -InputObject $doc.bios -Type Property -Name "Rel"))) {
     throw [System.FormatException]"There are currently no BIOS updates available for your platform."
   }
 
@@ -1745,8 +1742,8 @@ function Get-HPBIOSUpdates {
   }
 
   # trim the 0 from the start of the version and then sort on the version value
-  $refined_doc = $doc.SelectNodes("//BIOS/Rel") | Select-Object -Property @{ Name = 'Ver'; expr = { $_.Ver.TrimStart("0") } },'Date','Bin','RB','L','DP', 'Sha384' `
-     | Sort-Object -Property Ver -Descending
+  $refined_doc = $doc.SelectNodes("//BIOS/Rel") | Select-Object -Property @{ Name = 'Ver'; expr = { $_.Ver.TrimStart("0") } }, 'Date', 'Bin', 'RB', 'L', 'DP', 'Sha384' `
+  | Sort-Object -Property Ver -Descending
 
   # latest version
   $latestVer = $refined_doc[0]
@@ -1761,22 +1758,20 @@ function Get-HPBIOSUpdates {
 
     $args = @{}
     if ($all.IsPresent) {
-      $args.Property = (@{ Name = 'Ver'; expr = { $_.Ver.TrimStart("0") } },"Date","Bin",`
-           (@{ Name = 'RollbackAllowed'; expr = { [bool][int]$_.RB.trim() } }),`
-           (@{ Name = 'Importance'; expr = { [Enum]::ToObject([BiosUpdateCriticality],[int]$_.L.trim()) } }),`
-           (@{ Name = 'Dependency'; expr = { [string]$_.DP.trim() } }),`
-           (@{ Name = 'Sha384'; expr = { $_.Sha384.trim()}}))
+      $args.Property = (@{ Name = 'Ver'; expr = { $_.Ver.TrimStart("0") } }, "Date", "Bin", `
+        (@{ Name = 'RollbackAllowed'; expr = { [bool][int]$_.RB.trim() } }), `
+        (@{ Name = 'Importance'; expr = { [Enum]::ToObject([BiosUpdateCriticality], [int]$_.L.trim()) } }), `
+        (@{ Name = 'Dependency'; expr = { [string]$_.DP.trim() } }), `
+        (@{ Name = 'Sha384'; expr = { $_.Sha384.trim() } }))
     }
     else {
-      $args.Property = (@{ Name = 'Ver'; expr = { $_.Ver.TrimStart("0") } },"Date","Bin")
+      $args.Property = (@{ Name = 'Ver'; expr = { $_.Ver.TrimStart("0") } }, "Date", "Bin")
     }
 
     # for current platform: latest should return whichever is latest, between local and remote.
     # for any other platform specified: latest should return latest entry from SystemID.XML since we don't know local BIOSVersion
-    if ($latest)
-    {
-      if ($PSBoundParameters.ContainsKey('Platform'))
-      {
+    if ($latest) {
+      if ($PSBoundParameters.ContainsKey('Platform')) {
         # platform specified, do not read information from local system and return latest platform published
         $args.First = 1
       }
@@ -1785,21 +1780,20 @@ function Get-HPBIOSUpdates {
         # determine the local BIOS version
         [string]$haveVer = Get-HPBIOSVersion -Target $target
         # latest should return whichever is latest, between local and remote for current system.
-        if ([string]$haveVer -ge [string]$latestVer[0].Ver)
-        {
+        if ([string]$haveVer -ge [string]$latestVer[0].Ver) {
           # local is the latest. So, retrieve attributes other than BIOSVersion to print for latest
           for ($i = 0; $i -lt $refined_doc.Length; $i++) {
             if ($refined_doc[$i].Ver -eq $haveVer) {
               $haveVerFromDoc = $refined_doc[$i]
               $pso = [pscustomobject]@{
-                Ver = $haveVerFromDoc.Ver
-                Date = $haveVerFromDoc.Date
-                Bin = $haveVerFromDoc.Bin
+                Ver    = $haveVerFromDoc.Ver
+                Date   = $haveVerFromDoc.Date
+                Bin    = $haveVerFromDoc.Bin
                 Sha384 = $haveVerFromDoc.Sha384
               }
               if ($all) {
                 $pso | Add-Member -MemberType ScriptProperty -Name RollbackAllowed -Value { [bool][int]$haveVerFromDoc.RB.trim() }
-                $pso | Add-Member -MemberType ScriptProperty -Name Importance -Value { [Enum]::ToObject([BiosUpdateCriticality],[int]$haveVerFromDoc.L.trim()) }
+                $pso | Add-Member -MemberType ScriptProperty -Name Importance -Value { [Enum]::ToObject([BiosUpdateCriticality], [int]$haveVerFromDoc.L.trim()) }
                 $pso | Add-Member -MemberType ScriptProperty -Name Dependency -Value { [string]$haveVerFromDoc.DP.trim }
                 $pso | Add-Member -MemberType ScriptProperty -Name Dependency -Value { [string]$haveVerFromDoc.Sha384.trim }
               }
@@ -1821,9 +1815,9 @@ function Get-HPBIOSUpdates {
 
             $currentVer = Get-HPBIOSVersion
             $pso = [pscustomobject]@{
-              Ver = $currentVer
+              Ver  = $currentVer
               Date = $date
-              Bin = $null
+              Bin  = $null
             }
             if ($all) {
               $pso | Add-Member -MemberType ScriptProperty -Name RollbackAllowed -Value { $null }
@@ -1852,8 +1846,8 @@ function Get-HPBIOSUpdates {
     if ($version) {
       $version = $version.TrimStart('0')
       $latestVer = $refined_doc `
-         | Where-Object { $_.Ver.TrimStart("0") -eq $version } `
-         | Select-Object -Property Ver,Bin,Sha384 -First 1
+      | Where-Object { $_.Ver.TrimStart("0") -eq $version } `
+      | Select-Object -Property Ver, Bin, Sha384 -First 1
     }
 
     if (-not $latestVer) { throw [System.ArgumentOutOfRangeException]"Version $version was not found." }
@@ -1884,18 +1878,18 @@ function Get-HPBIOSUpdates {
       $isBAPset = Get-HPBIOSSetupPasswordIsSet
       $isDowngrade = [Version]$running.trim() -gt [Version]$remote_ver.trim()
 
-      if($isDowngrade){
+      if ($isDowngrade) {
         $authRequired = Test-HPAuthRequired -BiosUpdateType "Downgrade"
       }
       else {
         $authRequired = Test-HPAuthRequired -BiosUpdateType "Upgrade"
       }
 
-      if($authRequired){
-        if($isSureAdminEnabled -eq $true){
+      if ($authRequired) {
+        if ($isSureAdminEnabled -eq $true) {
           throw "Sure Admin is enabled, and authentication is required. You must use Update-HPFirmware with a payload"
         }
-        elseif($isSureAdminEnabled -eq $false -and $isBAPset -and -not $Password){
+        elseif ($isSureAdminEnabled -eq $false -and $isBAPset -and -not $Password) {
           throw "BIOS Setup Password is set, and authentication is required. Please provide a password to continue with the update."
         }
       }
@@ -1928,13 +1922,13 @@ function Get-HPBIOSUpdates {
     [Environment]::CurrentDirectory = $pwd
     #if (-not [System.IO.Path]::IsPathRooted($to)) { $to = ".\$to" }
 
-    $download_params.url = [string]"$Url/{0}/{1}" -f $platform,$remote_file
+    $download_params.url = [string]"$Url/{0}/{1}" -f $platform, $remote_file
     $download_params.Target = [IO.Path]::GetFullPath($local_file)
     $download_params.progress = ($quiet.IsPresent -eq $false)
     Invoke-HPPrivateDownloadFile @download_params -panic
 
     # check sha384 hash of downloaded file against hash in xml file
-    if($remote_file_hash) {
+    if ($remote_file_hash) {
       $localFileHash = (Get-FileHash $local_file -Algorithm SHA384).Hash
       Write-Verbose "Local file hash is $localFileHash"
 
@@ -1961,10 +1955,10 @@ function Get-HPBIOSUpdates {
       Write-Verbose "Passing to flash process with file $($download_params.target)"
 
       $update_params = @{
-        file = $download_params.Target
+        file      = $download_params.Target
         bitlocker = $bitlocker
-        Force = $Force
-        Password = $password
+        Force     = $Force
+        Password  = $password
       }
 
       Update-HPFirmware @update_params -Verbose:$VerbosePreference -Offline:$offlineMode -NoWait:$NoWait
@@ -1986,7 +1980,7 @@ function Get-HPPrivateBIOSFamilyNameAndVersion {
   $obj = Get-CimInstance @params -ErrorAction stop
   $verfield = (getWmiField $obj "SMBIOSBIOSVersion").Split()
 
-  return $verfield[0],$verfield[2]
+  return $verfield[0], $verfield[2]
 }
 
 
@@ -2051,69 +2045,70 @@ function Get-HPPrivateBIOSFamilyNameAndVersion {
 
 #>
 function Get-HPBIOSWindowsUpdate {
-  [CmdletBinding(DefaultParameterSetName = "Severity",HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSWindowsUpdate")]
+  [CmdletBinding(DefaultParameterSetName = "Severity", HelpUri = "https://developers.hp.com/hp-client-management/doc/Get-HPBIOSWindowsUpdate")]
   param(
-    [Parameter(Mandatory = $false,Position = 0,ParameterSetName = "Severity")]
-    [ValidateSet('Latest','LatestCritical')]
+    [Parameter(Mandatory = $false, Position = 0, ParameterSetName = "Severity")]
+    [ValidateSet('Latest', 'LatestCritical')]
     [string]$Severity = 'Latest',
 
-    [Parameter(Mandatory = $true,Position = 0,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "Specific")]
     [string]$Version,
 
-    [Parameter(Mandatory = $false,Position = 1,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 1,ParameterSetName = "Specific")]
-    [Parameter(Mandatory = $false,Position = 0,ParameterSetName = "List")]
+    [Parameter(Mandatory = $false, Position = 1, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 1, ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 0, ParameterSetName = "List")]
     [string]$Family,
 
-    [Parameter(Mandatory = $false,Position = 2,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 2,ParameterSetName = "Specific")]
-    [Parameter(Mandatory = $false,Position = 1,ParameterSetName = "List")]
+    [Parameter(Mandatory = $false, Position = 2, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 2, ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 1, ParameterSetName = "List")]
     [string]$Url = "https://hpia.hpcloud.hp.com/downloads/capsule",
 
-    [Parameter(Mandatory = $false,Position = 3,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 3,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 3, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 3, ParameterSetName = "Specific")]
     [switch]$Quiet,
 
-    [Parameter(Mandatory = $false,Position = 4,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 4,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 4, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 4, ParameterSetName = "Specific")]
     [string]$SaveAs,
 
-    [Parameter(Mandatory = $false,Position = 5,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 5,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 5, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 5, ParameterSetName = "Specific")]
     [switch]$Download,
 
-    [Parameter(Mandatory = $false,Position = 6,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 6,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 6, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 6, ParameterSetName = "Specific")]
     [switch]$Flash,
 
-    [Parameter(Mandatory = $false,Position = 7,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 7,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 7, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 7, ParameterSetName = "Specific")]
     [switch]$Yes,
 
-    [Parameter(Mandatory = $false,Position = 8,ParameterSetName = "Severity")]
-    [Parameter(Mandatory = $false,Position = 8,ParameterSetName = "Specific")]
+    [Parameter(Mandatory = $false, Position = 8, ParameterSetName = "Severity")]
+    [Parameter(Mandatory = $false, Position = 8, ParameterSetName = "Specific")]
     [switch]$Force,
 
-    [Parameter(Mandatory = $true,Position = 2,ParameterSetName = "List")]
+    [Parameter(Mandatory = $true, Position = 2, ParameterSetName = "List")]
     [switch]$List
   )
 
-   # only allow https or file paths with or without file:// URL prefix
-  if ($Url -and -not ($Url.StartsWith("https://",$true,$null) -or [System.IO.Directory]::Exists($Url) -or $Url.StartsWith("file://",$true,$null))) {
-  throw [System.ArgumentException]"Only HTTPS or valid existing directory paths are supported."
+  # only allow https or file paths with or without file:// URL prefix
+  if ($Url -and -not ($Url.StartsWith("https://", $true, $null) -or [System.IO.Directory]::Exists($Url) -or $Url.StartsWith("file://", $true, $null))) {
+    throw [System.ArgumentException]"Only HTTPS or valid existing directory paths are supported."
   }
 
   if ($Family -and -not $Version) {
-    $_,$biosVersion = Get-HPPrivateBIOSFamilyNameAndVersion
+    $_, $biosVersion = Get-HPPrivateBIOSFamilyNameAndVersion
     $biosFamily = $Family
   }
   elseif (-not $Family -and $Version) {
-    $biosFamily,$_ = Get-HPPrivateBIOSFamilyNameAndVersion
+    $biosFamily, $_ = Get-HPPrivateBIOSFamilyNameAndVersion
     $biosVersion = $Version
   }
   elseif (-not $Version -and -not $Family) {
-    $biosFamily,$biosVersion = Get-HPPrivateBIOSFamilyNameAndVersion
-  } else {
+    $biosFamily, $biosVersion = Get-HPPrivateBIOSFamilyNameAndVersion
+  }
+  else {
     $biosFamily = $Family
     $biosVersion = $Version
   }
@@ -2136,7 +2131,7 @@ function Get-HPBIOSWindowsUpdate {
 
   if ($List.IsPresent) {
     $data = $doc | Sort-Object -Property biosVersion -Descending
-    return $data | Format-Table -Property biosFamily,biosVersion,severity,isLatest,IsLatestCritical
+    return $data | Format-Table -Property biosFamily, biosVersion, severity, isLatest, IsLatestCritical
   }
 
   if ($PSCmdlet.ParameterSetName -eq "Specific") {
@@ -2157,7 +2152,7 @@ function Get-HPBIOSWindowsUpdate {
 
   $sort = $filter | Sort-Object -Property biosVersion -Descending
   @{
-    Family = $sort[0].biosFamily
+    Family  = $sort[0].biosFamily
     Version = $sort[0].BiosVersion
   }
 
@@ -2166,26 +2161,28 @@ function Get-HPBIOSWindowsUpdate {
 
     # downgrade is not supported for Windows Updates, so regardless of value of BIOS Update Credential Policy, 
     # we will throw an error 
-    if([Version]$running.trim() -gt [Version]$sort[0].BiosVersion.trim()) { # downgrade
+    if ([Version]$running.trim() -gt [Version]$sort[0].BiosVersion.trim()) {
+      # downgrade
       throw "Will not continue with update. Downgrade detected. Downgrade is not supported for Windows Updates."
     }
 
     $credentialPolicyValue = $null
-    try{
+    try {
       # at this point, it is an upgrade or update to same version 
       $credentialPolicyValue = Get-HPBIOSSettingValue -Name "BIOS Update Credential Policy" -Verbose:$VerbosePreference
     }
-    catch{
+    catch {
       Write-Verbose "Exception caught retrieving BIOS Update Credential Policy. Will continue with normal process: $($_.Exception.Message)"
     }
 
-    if($credentialPolicyValue -eq "Always Require Credentials") {
+    if ($credentialPolicyValue -eq "Always Require Credentials") {
       throw "Will not continue with update. BIOS Update Credential Policy is set to 'Always Require Credentials'."
     }
-    elseif($credentialPolicyValue -eq "Require Credentials on Downgrade Only"){
+    elseif ($credentialPolicyValue -eq "Require Credentials on Downgrade Only") {
       Write-Verbose "Continue to apply update. Upgrade or update to same version found, and BIOS Update Credential Policy is set to 'Require Credentials on Downgrade Only'."   
     }
-    else{ # Never Require Credentials or does not exist 
+    else {
+      # Never Require Credentials or does not exist 
       Write-Verbose "Continue to apply update. BIOS Update Credential Policy is set to 'Never Require Credentials' or does not exist."
     }
 
@@ -2210,7 +2207,8 @@ function Get-HPBIOSWindowsUpdate {
     Write-Verbose "Download from $($sort[0].url)"
     if ($SaveAs) {
       $localFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SaveAs)
-    } else {
+    }
+    else {
       $extension = ($sort[0].url -split '\.')[-1]
       $SaveAs = Get-HPPrivateTemporaryFileName -FileName "$($sort[0].biosFamily)_$($sort[0].biosVersion -Replace '\.').$extension"
       $localFile = [IO.Path]::GetFullPath($SaveAs)
@@ -2219,9 +2217,9 @@ function Get-HPBIOSWindowsUpdate {
 
     $download_params = @{
       NoClobber = "yes"
-      url = $sort[0].url 
-      Target = $localFile
-      progress = ($Quiet.IsPresent -eq $false)
+      url       = $sort[0].url 
+      Target    = $localFile
+      progress  = ($Quiet.IsPresent -eq $false)
     }
 
     try {
@@ -2233,7 +2231,7 @@ function Get-HPBIOSWindowsUpdate {
     Write-Host "Saved as $localFile"
 
     $hash = (Get-FileHash $localFile -Algorithm SHA1).Hash
-    $bytes = [byte[]] -split ($hash -replace '..','0x$& ')
+    $bytes = [byte[]] -split ($hash -replace '..', '0x$& ')
     $base64 = [System.Convert]::ToBase64String($bytes)
     if ($base64 -eq $sort[0].digest) {
       Write-Verbose "Integrity check passed"
@@ -2251,11 +2249,11 @@ function Get-HPBIOSWindowsUpdate {
 function Get-HPPrivatePSScriptsEntries {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory = $false,Position = 0)]
+    [Parameter(Mandatory = $false, Position = 0)]
     [string]$Path = "${env:SystemRoot}\System32\GroupPolicy\Machine\Scripts\psscripts.ini"
   )
 
-  $types = '[Logon]','[Logoff]','[Startup]','[Shutdown]'
+  $types = '[Logon]', '[Logoff]', '[Startup]', '[Shutdown]'
   $cmdLinesSet = @{}
   $parametersSet = @{}
 
@@ -2278,23 +2276,23 @@ function Get-HPPrivatePSScriptsEntries {
     }
   }
 
-  $cmdLinesSet,$parametersSet
+  $cmdLinesSet, $parametersSet
 }
 
 function Set-HPPrivatePSScriptsEntries {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory = $true,Position = 0)]
+    [Parameter(Mandatory = $true, Position = 0)]
     $CmdLines,
 
-    [Parameter(Mandatory = $true,Position = 1)]
+    [Parameter(Mandatory = $true, Position = 1)]
     $Parameters,
 
-    [Parameter(Mandatory = $false,Position = 2)]
+    [Parameter(Mandatory = $false, Position = 2)]
     [string]$Path = "${env:SystemRoot}\System32\GroupPolicy\Machine\Scripts\psscripts.ini"
   )
 
-  $types = '[Logon]','[Logoff]','[Startup]','[Shutdown]'
+  $types = '[Logon]', '[Logoff]', '[Startup]', '[Shutdown]'
   $contents = ""
   foreach ($type in $types) {
     if ($CmdLines.contains($type)) {
@@ -2360,26 +2358,25 @@ function Set-HPPrivatePSScriptsEntries {
 .EXAMPLE
   Add-HPPSScriptsEntry -Type 'Startup' -CmdLine 'myscript.ps1' -Parameters 'myparam'
 #>
-function Add-HPPSScriptsEntry
-{
+function Add-HPPSScriptsEntry {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Add-HPPSScriptsEntry")]
   [Alias('Add-PSScriptsEntry')]
   param(
-    [ValidateSet('Startup','Shutdown')]
-    [Parameter(Mandatory = $true,Position = 0)]
+    [ValidateSet('Startup', 'Shutdown')]
+    [Parameter(Mandatory = $true, Position = 0)]
     [string]$Type,
 
-    [Parameter(Mandatory = $true,Position = 1)]
+    [Parameter(Mandatory = $true, Position = 1)]
     [string]$CmdLine,
 
-    [Parameter(Mandatory = $false,Position = 2)]
+    [Parameter(Mandatory = $false, Position = 2)]
     [string]$Parameters,
 
-    [Parameter(Mandatory = $false,Position = 3)]
+    [Parameter(Mandatory = $false, Position = 3)]
     [string]$Path = "${env:SystemRoot}\System32\GroupPolicy\Machine\Scripts\psscripts.ini"
   )
 
-  $cmdLinesSet,$parametersSet = Get-HPPrivatePSScriptsEntries -Path $Path
+  $cmdLinesSet, $parametersSet = Get-HPPrivatePSScriptsEntries -Path $Path
 
   if (-not $cmdLinesSet.ContainsKey("[$Type]")) {
     $cmdLinesSet["[$Type]"] = [System.Collections.ArrayList]@()
@@ -2497,9 +2494,9 @@ function Get-HPCMSLEnvironment {
   try {
     @{
       SystemID = Get-HPDeviceProductID
-      Os = Get-HPPrivateCurrentOs
-      OsVer = Get-HPPrivateCurrentDisplayOSVer
-      Bitness = Get-HPPrivateCurrentOsBitness
+      Os       = Get-HPPrivateCurrentOs
+      OsVer    = Get-HPPrivateCurrentDisplayOSVer
+      Bitness  = Get-HPPrivateCurrentOsBitness
     }
   }
   catch {
@@ -2540,21 +2537,21 @@ function Remove-HPPSScriptsEntry {
   [CmdletBinding(HelpUri = "https://developers.hp.com/hp-client-management/doc/Remove-HPPSScriptsEntry")]
   [Alias('Remove-PSScriptsEntry')]
   param(
-    [ValidateSet('Startup','Shutdown')]
-    [Parameter(Mandatory = $true,Position = 0)]
+    [ValidateSet('Startup', 'Shutdown')]
+    [Parameter(Mandatory = $true, Position = 0)]
     [string]$Type,
 
-    [Parameter(Mandatory = $true,Position = 1)]
+    [Parameter(Mandatory = $true, Position = 1)]
     [string]$CmdLine,
 
-    [Parameter(Mandatory = $false,Position = 2)]
+    [Parameter(Mandatory = $false, Position = 2)]
     [string]$Parameters,
 
-    [Parameter(Mandatory = $false,Position = 3)]
+    [Parameter(Mandatory = $false, Position = 3)]
     [string]$Path = "${env:SystemRoot}\System32\GroupPolicy\Machine\Scripts\psscripts.ini"
   )
 
-  $cmdLinesSet,$parametersSet = Get-HPPrivatePSScriptsEntries -Path $Path
+  $cmdLinesSet, $parametersSet = Get-HPPrivatePSScriptsEntries -Path $Path
 
   if (-not $cmdLinesSet.ContainsKey("[$Type]") -and -not $parametersSet.ContainsKey("[$Type]")) {
     # File doesn't contain the type specified. There is nothing to be removed
@@ -2594,10 +2591,10 @@ function Remove-HPPSScriptsEntry {
   Add-HPBIOSWindowsUpdateScripts -WindowsUpdateFile C:\R70_011200.cab
 #>
 function Add-HPBIOSWindowsUpdateScripts {
-  [CmdletBinding(DefaultParameterSetName = "Default",HelpUri = "https://developers.hp.com/hp-client-management/doc/Add-HPBIOSWindowsUpdateScripts")]
+  [CmdletBinding(DefaultParameterSetName = "Default", HelpUri = "https://developers.hp.com/hp-client-management/doc/Add-HPBIOSWindowsUpdateScripts")]
   param(
     [ValidatePattern('^[A-Za-z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[A-Za-z0-9]{3}_[0-9]{6}\.(cab|CAB)$')]
-    [Parameter(Mandatory = $true,Position = 0,ParameterSetName = "Default")]
+    [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "Default")]
     [string]$WindowsUpdateFile
   )
 
@@ -2611,9 +2608,9 @@ function Add-HPBIOSWindowsUpdateScripts {
   Invoke-HPPrivateExpandCAB -cab $WindowsUpdateFile -Verbose:$VerbosePreference
 
   $fileName = ($WindowsUpdateFile -split '\\')[-1]
-  $directory = $WindowsUpdateFile -replace $fileName,''
+  $directory = $WindowsUpdateFile -replace $fileName, ''
 
-  $fileName = $fileName.substring(0,$fileName.Length - 4)
+  $fileName = $fileName.substring(0, $fileName.Length - 4)
 
   # Directory name comes from WindowsUpdateFile parameter, no need to check if version has 4 or 6 digits 
   $expectedDir = "$directory$fileName.cab.dir"
@@ -2630,7 +2627,7 @@ function Add-HPBIOSWindowsUpdateScripts {
     throw "Invalid cab file, did not find .inf in contents"
   }
 
-  $infFileName = $inf.substring(0,$inf.Length - 4)
+  $infFileName = $inf.substring(0, $inf.Length - 4)
   $binFileLength = (Get-Item "$expectedDir\$infFileName.bin").Length
 
   # Remove cab file
@@ -2657,10 +2654,10 @@ function Add-HPBIOSWindowsUpdateScripts {
   # between now and reboot time, but this check will at least avoid the case where there is not enough space now.
   # We will notify users of insufficient space now rather than trying to figure out after reboot why bios update failed. 
   $volumes = Get-Partition  | Select-Object `
-  @{ Name = "Path"; Expression = { (Get-Volume -Partition $_).Path } },`
-  @{ Name = "Mount"; Expression = {(Get-Volume -Partition $_).DriveType } },`
-  @{ Name = "Type"; Expression = { $_.Type } },`
-  @{ Name = "Disk"; Expression = { $_.DiskNumber } },`
+  @{ Name = "Path"; Expression = { (Get-Volume -Partition $_).Path } }, `
+  @{ Name = "Mount"; Expression = { (Get-Volume -Partition $_).DriveType } }, `
+  @{ Name = "Type"; Expression = { $_.Type } }, `
+  @{ Name = "Disk"; Expression = { $_.DiskNumber } }, `
   @{ Name = "UniqueId"; Expression = { $_.UniqueId } }
   $volumes = $volumes | Where-Object Mount -EQ "Fixed"
   [array]$efi = $volumes | Where-Object { $_.type -eq "System" }
@@ -2816,29 +2813,29 @@ function Get-HPDeviceDetails {
   ]
   param(
     [ValidatePattern("^[a-fA-F0-9]{4}$")]
-    [Parameter(Mandatory = $false,Position = 0,ParameterSetName = "FromID")]
+    [Parameter(Mandatory = $false, Position = 0, ParameterSetName = "FromID")]
     [string]$Platform,
 
-    [Parameter(Mandatory = $true,Position = 1,ParameterSetName = "FromName")]
+    [Parameter(Mandatory = $true, Position = 1, ParameterSetName = "FromName")]
     [string]$Name,
 
-    [Parameter(Mandatory = $false,Position = 2,ParameterSetName = "FromName")]
+    [Parameter(Mandatory = $false, Position = 2, ParameterSetName = "FromName")]
     [Alias('Match')]
     [switch]$Like,
 
-    [Parameter(Mandatory = $false,ParameterSetName = "FromName")]
-    [Parameter(Mandatory = $false,ParameterSetName = "FromID")]
+    [Parameter(Mandatory = $false, ParameterSetName = "FromName")]
+    [Parameter(Mandatory = $false, ParameterSetName = "FromID")]
     [switch]$OSList,
 
-    [Parameter(Mandatory = $false,Position = 3,ParameterSetName = "FromName")]
-    [Parameter(Mandatory = $false,Position = 1,ParameterSetName = "FromID")]
+    [Parameter(Mandatory = $false, Position = 3, ParameterSetName = "FromName")]
+    [Parameter(Mandatory = $false, Position = 1, ParameterSetName = "FromID")]
     [string]$Url = "https://hpia.hpcloud.hp.com/ref"
   )
 
   if (Test-HPWinPE -Verbose:$VerbosePreference) { throw "Getting HP Device details is not supported in WinPE" }
 
-    # only allow https or file paths with or without file:// URL prefix
-  if ($Url -and -not ($Url.StartsWith("https://",$true,$null) -or [System.IO.Directory]::Exists($Url) -or $Url.StartsWith("file://",$true,$null))) {
+  # only allow https or file paths with or without file:// URL prefix
+  if ($Url -and -not ($Url.StartsWith("https://", $true, $null) -or [System.IO.Directory]::Exists($Url) -or $Url.StartsWith("file://", $true, $null))) {
     throw [System.ArgumentException]"Only HTTPS or valid existing directory paths are supported."
   }
 
@@ -2854,16 +2851,20 @@ function Get-HPDeviceDetails {
     $try_on_ftp = $true
   }
 
-  if ($try_on_ftp)
-  {
+  if ($try_on_ftp) {
     try {
       $url = "https://ftp.hp.com/pub/caps-softpaq/cmit/imagepal/ref/platformList.cab"
       $file = Get-HPPrivateOfflineCacheFiles -url $url -FileName $filename -Expand -Verbose:$VerbosePreference
     }
     catch {
-      Write-Host -ForegroundColor Magenta "platformList is not available on AWS or FTP."
-      throw [System.Net.WebException]"Could not find platformList."
+      Write-Warning "platformList is not available on AWS or FTP. Proceeding without it if possible."
+      return $null
     }
+  }
+  
+  if (-not $file -or (-not (Test-Path $file))) {
+    Write-Warning "platformList.xml could not be extracted or found."
+    return $null
   }
 
   if (-not $platform -and -not $Name) {
@@ -2883,8 +2884,7 @@ function Get-HPDeviceDetails {
   if (-not $data) { return }
 
   $searchName = $Name
-  if ($Like.IsPresent)
-  {
+  if ($Like.IsPresent) {
     if (-not ($searchName).StartsWith('*')) { $searchName = ("*$searchName") }
     if (-not ($searchName).EndsWith('*')) { $searchName = ("$searchName*") }
   }
@@ -2895,43 +2895,43 @@ function Get-HPDeviceDetails {
 
     if ($oslist.IsPresent) {
       [array]$r = ($__.OS | ForEach-Object {
-        if (($PSCmdlet.ParameterSetName -eq "FromID") -or ($pn -like $searchName)) {
-          $rid = $Null
-          if ("OSReleaseId" -in $_.PSObject.Properties.Name) { $rid = $_.OSReleaseId }
+          if (($PSCmdlet.ParameterSetName -eq "FromID") -or ($pn -like $searchName)) {
+            $rid = $Null
+            if ("OSReleaseId" -in $_.PSObject.Properties.Name) { $rid = $_.OSReleaseId }
 
-          [string]$osv = $_.OSVersion
-          if ("OSReleaseIdDisplay" -in $_.PSObject.Properties.Name -and $_.OSReleaseIdDisplay -ne '20H2') {
-            $rid = $_.OSReleaseIdDisplay
-          }
+            [string]$osv = $_.OSVersion
+            if ("OSReleaseIdDisplay" -in $_.PSObject.Properties.Name -and $_.OSReleaseIdDisplay -ne '20H2') {
+              $rid = $_.OSReleaseIdDisplay
+            }
 
-          $obj = New-Object -TypeName PSCustomObject -Property @{
-            SystemID = $__.SystemID.ToUpper()
-            OperatingSystem = $_.OSDescription
-            OperatingSystemVersion = $osv
-            Architecture = $_.OSArchitecture
+            $obj = New-Object -TypeName PSCustomObject -Property @{
+              SystemID               = $__.SystemID.ToUpper()
+              OperatingSystem        = $_.OSDescription
+              OperatingSystemVersion = $osv
+              Architecture           = $_.OSArchitecture
+            }
+            if ($rid) {
+              $obj | Add-Member -NotePropertyName OperatingSystemRelease -NotePropertyValue $rid
+            }
+            if ("OSBuildId" -in $_.PSObject.Properties.Name) {
+              $obj | Add-Member -NotePropertyName BuildNumber -NotePropertyValue $_.OSBuildId
+            }
+            $obj
           }
-          if ($rid) {
-            $obj | Add-Member -NotePropertyName OperatingSystemRelease -NotePropertyValue $rid
-          }
-          if ("OSBuildId" -in $_.PSObject.Properties.Name) {
-            $obj | Add-Member -NotePropertyName BuildNumber -NotePropertyValue $_.OSBuildId
-          }
-          $obj
-        }
-      })
+        })
     }
     else {
 
       [array]$r = ($__.ProductName | ForEach-Object {
-        if (($PSCmdlet.ParameterSetName -eq "FromID") -or ($_. "#text" -like $searchName)) {
-          New-Object -TypeName PSCustomObject -Property @{
-            SystemID = $__.SystemID.ToUpper()
-            Name = $_. "#text"
-            DriverPackSupport = [System.Convert]::ToBoolean($_.DPBCompliant)
-            UWPDriverPackSupport = [System.Convert]::ToBoolean($_.UDPCompliant)
+          if (($PSCmdlet.ParameterSetName -eq "FromID") -or ($_. "#text" -like $searchName)) {
+            New-Object -TypeName PSCustomObject -Property @{
+              SystemID             = $__.SystemID.ToUpper()
+              Name                 = $_. "#text"
+              DriverPackSupport    = [System.Convert]::ToBoolean($_.DPBCompliant)
+              UWPDriverPackSupport = [System.Convert]::ToBoolean($_.UDPCompliant)
+            }
           }
-        }
-      })
+        })
     }
     return $r
   }
@@ -2961,7 +2961,7 @@ function getFormattedBiosSettingValue {
   return $result
 }
 
-function getWmiField ($obj,$fn) { $obj.$fn }
+function getWmiField ($obj, $fn) { $obj.$fn }
 
 
 # format a setting using BCU (custom) format
@@ -3016,8 +3016,7 @@ function formatBiosVersionsOutputList ($doc) {
     "json" { return $doc | ConvertTo-Json }
     "xml" {
       Write-Output "<bios id=`"$platform`">"
-      if ($all)
-      {
+      if ($all) {
         $doc | ForEach-Object { Write-Output "<item><ver>$($_.Ver)</ver><bin>$($_.bin)</bin><date>$($_.date)</date><rollback_allowed>$($_.RollbackAllowed)</rollback_allowed><importance>$($_.Importance)</importance></item>" }
       }
       else {
@@ -3103,7 +3102,7 @@ function convertSettingToJSON ($original_setting) {
     Add-Member -InputObject $setting -Name "Min" -Value $min -MemberType NoteProperty
     Add-Member -InputObject $setting -Name "Max" -Value $max -MemberType NoteProperty
 
-    $d = $setting | Select-Object -Property Class,DisplayInUI,InstanceName,IsReadOnly,Min,Max,Name,Path,Prerequisites,PrerequisiteSize,RequiresPhysicalPresence,SecurityLevel,Sequence,Value
+    $d = $setting | Select-Object -Property Class, DisplayInUI, InstanceName, IsReadOnly, Min, Max, Name, Path, Prerequisites, PrerequisiteSize, RequiresPhysicalPresence, SecurityLevel, Sequence, Value
   }
 
   if (($setting.CimClass.CimClassName -eq "HPBIOS_BIOSString") -or ($setting.CimClass.CimClassName -eq "HPBIOS_BIOSPassword")) {
@@ -3111,7 +3110,7 @@ function convertSettingToJSON ($original_setting) {
     $max = $setting.MaxLength
     Add-Member -InputObject $setting -Name "Min" -Value $min -MemberType NoteProperty -Force
     Add-Member -InputObject $setting -Name "Max" -Value $max -MemberType NoteProperty -Force
-    $d = $setting | Select-Object -Property Class,DisplayInUI,InstanceName,IsReadOnly,Min,Max,Name,Path,Prerequisites,PrerequisiteSize,RequiresPhysicalPresence,SecurityLevel,Sequence,Value
+    $d = $setting | Select-Object -Property Class, DisplayInUI, InstanceName, IsReadOnly, Min, Max, Name, Path, Prerequisites, PrerequisiteSize, RequiresPhysicalPresence, SecurityLevel, Sequence, Value
   }
 
   if ($setting.CimClass.CimClassName -eq "HPBIOS_BIOSEnumeration") {
@@ -3120,18 +3119,18 @@ function convertSettingToJSON ($original_setting) {
     #Add-Member -InputObject $setting -Name "Min" -Value $min -MemberType NoteProperty
     #Add-Member -InputObject $setting -Name "Max" -Value $max -MemberType NoteProperty
     $setting.Value = $setting.CurrentValue
-    $d = $setting | Select-Object -Property Class,DisplayInUI,InstanceName,IsReadOnly,Min,Max,Name,Path,Prerequisites,PrerequisiteSize,RequiresPhysicalPresence,SecurityLevel,Sequence,Value,PossibleValues
+    $d = $setting | Select-Object -Property Class, DisplayInUI, InstanceName, IsReadOnly, Min, Max, Name, Path, Prerequisites, PrerequisiteSize, RequiresPhysicalPresence, SecurityLevel, Sequence, Value, PossibleValues
   }
 
   if ($setting.CimClass.CimClassName -eq "HPBIOS_BIOSOrderedList") {
     #if Elements is null, initialize it as an empty array else select the first object
-    $Elements = $setting.Elements,@() | Select-Object -First 1
+    $Elements = $setting.Elements, @() | Select-Object -First 1
     $min = $Elements.Count
     $max = $Elements.Count
     Add-Member -InputObject $setting -Name "Min" -Value $min -MemberType NoteProperty
     Add-Member -InputObject $setting -Name "Max" -Value $max -MemberType NoteProperty
     Add-Member -InputObject $setting -Name "PossibleValues" -Value $Elements -MemberType NoteProperty
-    $d = $setting | Select-Object -Property Class,DisplayInUI,InstanceName,IsReadOnly,Min,Max,Name,Path,Prerequisites,PrerequisiteSize,RequiresPhysicalPresence,SecurityLevel,Sequence,Value,Elements
+    $d = $setting | Select-Object -Property Class, DisplayInUI, InstanceName, IsReadOnly, Min, Max, Name, Path, Prerequisites, PrerequisiteSize, RequiresPhysicalPresence, SecurityLevel, Sequence, Value, Elements
   }
 
 
@@ -3164,7 +3163,7 @@ function extractBIOSVersion {
   [CmdletBinding()]
   param
   (
-    [Parameter(Position = 0,Mandatory = $true)]
+    [Parameter(Position = 0, Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]$BIOSVersion
 

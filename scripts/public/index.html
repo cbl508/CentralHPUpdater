@@ -62,13 +62,6 @@
                 </div>
 
                 <div class="actions-grid">
-                    <button class="btn btn-primary action-btn hover-grow desc-btn" id="btn-init">
-                        <div class="btn-top">
-                            <div class="btn-icon-large"><i class="fa-solid fa-box-open"></i></div>
-                            <span>Initialize Repo</span>
-                        </div>
-                        <span class="btn-desc">Creates a new repository metadata file in the folder.</span>
-                    </button>
                     <button class="btn btn-primary action-btn hover-grow desc-btn" id="btn-sync">
                         <div class="btn-top">
                             <div class="btn-icon-large"><i class="fa-solid fa-rotate"></i></div>
@@ -217,6 +210,33 @@
                             Filter</button>
                     </div>
                 </form>
+
+                <div class="info-card glass-card" style="margin-top: 2rem;">
+                    <h3><i class="fa-solid fa-list-check"></i> Applied Filters</h3>
+                    <div class="table-container fade-in">
+                        <table class="datatable">
+                            <thead>
+                                <tr>
+                                    <th>Platform</th>
+                                    <th>OS</th>
+                                    <th>Version</th>
+                                    <th>Categories</th>
+                                    <th>Characteristics</th>
+                                    <th>Release Type</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filters-table-body">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                        <div id="filters-empty-state" class="empty-state">
+                            <i class="fa-solid fa-filter-circle-xmark empty-state-icon"></i>
+                            <p>No filters are currently applied to this repository.</p>
+                            <span class="text-muted text-sm">Use the form above to add filters before Syncing.</span>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Settings Tab -->
@@ -224,6 +244,21 @@
                 <div class="tab-header">
                     <h2><i class="fa-solid fa-gear"></i> Configuration Settings</h2>
                     <p>Adjust the repository behaviors.</p>
+                </div>
+
+                <div class="info-card glass-card"
+                    style="margin-bottom: 2rem; border-left: 4px solid var(--accent-danger);">
+                    <h3>Advanced Actions</h3>
+                    <p class="text-muted" style="margin-bottom: 1rem;">These actions should only be run once during
+                        initial setup or troubleshooting.</p>
+                    <button class="btn btn-secondary hover-grow desc-btn" id="btn-init" style="max-width: 300px;">
+                        <div class="btn-top">
+                            <div class="btn-icon"><i class="fa-solid fa-box-open"></i></div>
+                            <span>Initialize Repo</span>
+                        </div>
+                        <span class="btn-desc">Creates a new repository metadata file in the configuration
+                            folder.</span>
+                    </button>
                 </div>
 
                 <form id="settings-form" class="form-container glass-card">

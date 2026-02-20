@@ -88,6 +88,9 @@ async function initApp() {
         repoPathInput.value = res.path;
     }
 
+    // Refresh info table
+    document.getElementById('btn-info').click();
+
     // Start polling logs every 3 seconds
     setInterval(fetchLogs, 3000);
 }
@@ -159,6 +162,7 @@ document.getElementById('btn-info').addEventListener('click', async () => {
             document.getElementById('s-cache').value = res.settings.OfflineCacheMode || 'Disable';
             document.getElementById('s-report').value = res.settings.RepositoryReport || 'CSV';
         }
+        renderFiltersTable(res.filters);
     } else {
         showToast(res.message, true);
     }
@@ -209,10 +213,60 @@ document.getElementById('filter-form').addEventListener('submit', async (e) => {
         // Reset form
         document.getElementById('f-platform').value = '';
         document.querySelectorAll('#filter-form input[type="checkbox"]').forEach(c => c.checked = false);
+        // Refresh table
+        document.getElementById('btn-info').click();
     } else {
         showToast(res.message, true);
     }
 });
+
+function renderFiltersTable(filters) {
+    const tbody = document.getElementById('filters-table-body');
+    const emptyState = document.getElementById('filters-empty-state');
+    const tableContainer = tbody.closest('table').parentElement;
+
+    tbody.innerHTML = '';
+
+    if (!filters || filters.length === 0) {
+        tbody.closest('table').classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+    }
+
+    tbody.closest('table').classList.remove('hidden');
+    emptyState.classList.add('hidden');
+
+    filters.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-family: var(--font-mono); font-weight: bold;">${f.platform || '*'}</td>
+            <td>${f.os || '*'}</td>
+            <td>${f.osVer || '*'}</td>
+            <td><span class="badge badge-primary">${f.category ? (Array.isArray(f.category) ? f.category.join(', ') : f.category) : '*'}</span></td>
+            <td><span class="badge badge-secondary">${f.characteristic ? (Array.isArray(f.characteristic) ? f.characteristic.join(', ') : f.characteristic) : '*'}</span></td>
+            <td><span class="badge badge-warning">${f.releaseType ? (Array.isArray(f.releaseType) ? f.releaseType.join(', ') : f.releaseType) : '*'}</span></td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="deleteFilter('${f.platform}')" title="Remove Filter">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.deleteFilter = async function (platform) {
+    if (!confirm(`Are you sure you want to remove the filter for platform ${platform}?`)) return;
+    showLoading('Removing Filter...');
+    const res = await apiCall('/filter', 'DELETE', { Platform: platform });
+    hideLoading();
+    if (res.success) {
+        showToast('Filter Removed Successfully');
+        document.getElementById('btn-info').click();
+    } else {
+        showToast(res.message, true);
+    }
+};
 
 // Fleet Management
 let fleetState = [];

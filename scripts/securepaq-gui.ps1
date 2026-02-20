@@ -229,6 +229,17 @@ try {
                 OfflineCacheMode     = [string]$cache
                 RepositoryReport     = [string]$report
               }
+
+              $filters = Get-HPRepositoryFilter -ErrorAction SilentlyContinue
+              if ($filters -and $filters.Count -gt 0) {
+                $resData.filters = @($filters | Select-Object platform, os, osVer, category, releaseType, characteristic, preferLTSC, version)
+              }
+              else {
+                $resData.filters = @();
+                if ($filters -and $filters.platform) {
+                  $resData.filters = @($filters | Select-Object platform, os, osVer, category, releaseType, characteristic, preferLTSC, version)
+                }
+              }
             }
             catch {
               $resData.success = $false
@@ -306,31 +317,37 @@ try {
           '^/api/filter$' {
             Push-Location $script:repoPath
             try {
-              if (-not $reqBody.Platform -or $reqBody.Platform -notmatch '^[A-Fa-f0-9]{4}$') {
-                throw 'Platform ID must be exactly 4 hexadecimal characters.'
+              if ($method -eq 'DELETE') {
+                if (-not $reqBody.Platform) { throw 'Platform ID is required for deletion.' }
+                Remove-HPRepositoryFilter -Platform $reqBody.Platform -Verbose *>&1 | ForEach-Object { Write-ApiLog "$_" }
               }
+              else {
+                if (-not $reqBody.Platform -or $reqBody.Platform -notmatch '^[A-Fa-f0-9]{4}$') {
+                  throw 'Platform ID must be exactly 4 hexadecimal characters.'
+                }
 
-              $params = @{
-                Platform       = $reqBody.Platform.ToUpperInvariant()
-                Category       = if ($reqBody.Category) { [string[]]$reqBody.Category } else { @('*') }
-                ReleaseType    = if ($reqBody.ReleaseType) { [string[]]$reqBody.ReleaseType } else { @('*') }
-                Characteristic = if ($reqBody.Characteristic) { [string[]]$reqBody.Characteristic } else { @('*') }
-                Verbose        = $true
+                $params = @{
+                  Platform       = $reqBody.Platform.ToUpperInvariant()
+                  Category       = if ($reqBody.Category) { [string[]]$reqBody.Category } else { @('*') }
+                  ReleaseType    = if ($reqBody.ReleaseType) { [string[]]$reqBody.ReleaseType } else { @('*') }
+                  Characteristic = if ($reqBody.Characteristic) { [string[]]$reqBody.Characteristic } else { @('*') }
+                  Verbose        = $true
+                }
+
+                if ($reqBody.Os) {
+                  $params.Os = [string]$reqBody.Os
+                }
+
+                if ($reqBody.Os -ne '*' -and $reqBody.OsVer -and [string]$reqBody.OsVer -ne '') {
+                  $params.OsVer = [string]$reqBody.OsVer
+                }
+
+                if ($reqBody.PreferLtsc) {
+                  $params.PreferLTSC = $true
+                }
+
+                Add-HPRepositoryFilter @params *>&1 | ForEach-Object { Write-ApiLog "$_" }
               }
-
-              if ($reqBody.Os) {
-                $params.Os = [string]$reqBody.Os
-              }
-
-              if ($reqBody.Os -ne '*' -and $reqBody.OsVer -and [string]$reqBody.OsVer -ne '') {
-                $params.OsVer = [string]$reqBody.OsVer
-              }
-
-              if ($reqBody.PreferLtsc) {
-                $params.PreferLTSC = $true
-              }
-
-              Add-HPRepositoryFilter @params *>&1 | ForEach-Object { Write-ApiLog "$_" }
             }
             catch {
               $resData.success = $false
